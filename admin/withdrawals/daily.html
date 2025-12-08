@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Withdrawals - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f8fafc;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 260px;
+            background: var(--surface);
+            border-right: 1px solid var(--border-color);
+            padding: 0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .admin-sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            padding: 24px;
+            border-bottom: 2px solid var(--border-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            color: white;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 16px;
+            margin: 0;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 4px;
+        }
+
+        .sidebar-menu-button {
+            width: 100%;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 6px;
+            margin: 4px 8px;
+            position: relative;
+        }
+
+        .sidebar-menu-button::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: var(--primary-color);
+            border-radius: 0 3px 3px 0;
+            transition: height 0.3s ease;
+        }
+
+        .sidebar-menu-button:hover {
+            background: linear-gradient(90deg, rgba(75, 85, 99, 0.08) 0%, transparent 100%);
+            color: var(--primary-color);
+            padding-left: 24px;
+        }
+
+        .sidebar-menu-button:hover span:first-child {
+            transform: translateX(-3px);
+        }
+
+        .sidebar-menu-button:hover::before {
+            height: 60%;
+        }
+
+        /* Main Content */
+        .admin-main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px;
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .page-header:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+            letter-spacing: -0.8px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--background);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .date-selector label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .date-selector input[type="date"] {
+            padding: 8px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .date-selector input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .date-selector input[type="date"]:hover {
+            border-color: var(--primary-color);
+        }
+
+        .back-btn {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(75, 85, 99, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-color) 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
+        }
+
+        .back-btn:hover span:first-child {
+            transform: translateX(-3px);
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Summary Card */
+        .summary-card {
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.95) 0%, rgba(75, 85, 99, 0.85) 100%);
+            color: white;
+            padding: 18px 22px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(75, 85, 99, 0.18), 0 2px 6px rgba(75, 85, 99, 0.08);
+            margin-bottom: 18px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card.collapsed {
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .summary-card-toggle {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+
+        .summary-card-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .summary-card-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-10%, -10%) rotate(180deg); }
+        }
+
+        .summary-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary-value {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.05;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-date {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 8px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Transactions Table */
+        .transactions-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .transactions-container:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .transactions-header {
+            padding: 20px 24px;
+            border-bottom: 2px solid var(--border-color);
+            background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transactions-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .transactions-table thead {
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .transactions-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .transactions-table td {
+            padding: 16px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            vertical-align: middle;
+            transition: background-color 0.2s ease;
+        }
+
+        .transactions-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .transactions-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .transactions-table tbody tr:hover {
+            background: rgba(75, 85, 99, 0.05) !important;
+            transform: scale(1.001);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .transactions-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .client-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .client-phone {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .agent-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .amount {
+            font-weight: 800;
+            color: var(--error-color);
+            font-size: 15px;
+            letter-spacing: -0.3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--error-color);
+        }
+
+        .error-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .error-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .error-state-text {
+            font-size: 14px;
+        }
+
+        .new-withdrawal-btn {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.95) 0%, rgba(75, 85, 99, 0.85) 100%);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(75, 85, 99, 0.2), 0 6px 18px rgba(75, 85, 99, 0.08);
+            min-width: 140px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .new-withdrawal-btn * {
+            color: #ffffff !important;
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .new-withdrawal-btn::before {
+            content: none !important;
+        }
+
+        .new-withdrawal-btn::after {
+            content: none !important;
+        }
+
+        .new-withdrawal-btn:hover {
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.95) 0%, rgba(75, 85, 99, 0.85) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3), 0 6px 18px rgba(75, 85, 99, 0.15);
+        }
+
+        .new-withdrawal-btn:hover span {
+            color: white !important;
+        }
+
+        .new-withdrawal-btn span:first-child {
+            font-size: 18px;
+            font-weight: 700;
+            color: white !important;
+        }
+
+        .new-withdrawal-btn span:last-child {
+            color: white !important;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .withdrawal-dialog-form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .form-group input {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--background);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .form-group input:hover {
+            border-color: var(--primary-color);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-group select {
+            padding: 8px 32px 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+            font-weight: 500;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+        }
+
+        /* Remove box styling from dropdown list */
+        .form-group select optgroup {
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .form-group select:hover {
+            border-color: var(--primary-color);
+            background-color: var(--surface);
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.1);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%234b5563' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        }
+
+        .form-group select option {
+            padding: 10px 12px;
+            background: var(--surface);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .form-group select option:hover {
+            background: rgba(75, 85, 99, 0.08);
+            color: var(--primary-color);
+        }
+
+        .form-group select option:checked,
+        .form-group select option:focus {
+            background: rgba(75, 85, 99, 0.12);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .form-group select option:disabled {
+            color: var(--text-secondary);
+            background: var(--background);
+            opacity: 0.6;
+        }
+
+        /* Completely remove box styling from all options */
+        .form-group select option {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background-clip: padding-box !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            margin: 0 !important;
+            padding: 10px 12px !important;
+        }
+
+        /* Style placeholder option - subtle, no box */
+        .form-group select option[value=""] {
+            color: var(--text-secondary) !important;
+            font-style: italic;
+            background: transparent !important;
+            padding: 10px 12px !important;
+        }
+
+        /* Remove any visual boxes/borders from the dropdown list container */
+        .form-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* Additional styling to remove box appearance in dropdown */
+        .form-group select::-ms-expand {
+            display: none;
+        }
+
+        /* Remove default browser styling that creates boxes */
+        .form-group select option:not([value=""]) {
+            background: var(--surface) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .form-group select option:not([value=""]):hover {
+            background: rgba(75, 85, 99, 0.08) !important;
+            color: var(--primary-color) !important;
+        }
+
+        .form-group select option:not([value=""]):checked,
+        .form-group select option:not([value=""]):focus {
+            background: rgba(75, 85, 99, 0.12) !important;
+            color: var(--primary-color) !important;
+            font-weight: 600 !important;
+        }
+
+        .form-group input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .dialog-textarea {
+            width: 100%;
+            min-height: 90px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--background);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .dialog-textarea:hover {
+            border-color: var(--primary-color);
+        }
+
+        .dialog-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Enhanced Dialog Styling */
+        .dialog-box {
+            max-width: 600px !important;
+            width: 90% !important;
+            max-height: 90vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        .dialog-header {
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(75, 85, 99, 0.05) 100%);
+            border-bottom: 2px solid rgba(75, 85, 99, 0.2);
+            flex-shrink: 0;
+        }
+
+        .dialog-body {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            max-height: calc(90vh - 140px);
+        }
+
+        .dialog-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .dialog-body::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+
+        .dialog-body::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 4px;
+        }
+
+        .dialog-body::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        .dialog-footer {
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .dialog-icon.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            box-shadow: 0 2px 8px rgba(75, 85, 99, 0.2);
+        }
+
+        .close-dialog-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .close-dialog-btn:hover {
+            background: rgba(75, 85, 99, 0.1);
+            color: var(--error-color);
+        }
+
+        /* Searchable Client Input */
+        .client-search-container {
+            position: relative;
+        }
+
+        .client-search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--background);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .client-search-input:hover {
+            border-color: var(--primary-color);
+        }
+
+        .client-search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .client-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 10001;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+            display: none;
+        }
+
+        .client-suggestions::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .client-suggestions::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 3px;
+        }
+
+        .client-suggestions::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 3px;
+        }
+
+        .client-suggestions::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        .client-suggestions.show {
+            display: block;
+        }
+
+        .client-suggestion-item {
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .client-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .client-suggestion-item:hover {
+            background: rgba(75, 85, 99, 0.05);
+            border-left: 3px solid var(--primary-color);
+            padding-left: 11px;
+        }
+
+        .client-suggestion-item.selected {
+            background: rgba(75, 85, 99, 0.08);
+            border-left: 3px solid var(--primary-color);
+            padding-left: 11px;
+        }
+
+        .client-suggestion-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 3px;
+        }
+
+        .client-suggestion-details {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            line-height: 1.5;
+        }
+
+        .selected-client-info {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: rgba(75, 85, 99, 0.05);
+            border: 1px solid rgba(75, 85, 99, 0.15);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-primary);
+            display: none;
+            line-height: 1.6;
+        }
+
+        .selected-client-info.show {
+            display: block;
+        }
+
+        .selected-client-info strong {
+            color: var(--primary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                width: 220px;
+            }
+
+            .admin-main {
+                margin-left: 220px;
+                padding: 16px;
+            }
+
+            .transactions-table {
+                font-size: 11px;
+            }
+
+            .transactions-table th,
+            .transactions-table td {
+                padding: 8px 12px;
+            }
+
+            .summary-card-toggle {
+                display: flex;
+            }
+
+            .summary-card {
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
+                        <span style="font-size: 16px; display: inline-block; transform: translateX(0); transition: transform 0.3s ease;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Daily Withdrawals</h1>
+                    <p class="page-subtitle">View all withdrawals made for a specific day</p>
+                </div>
+                <div class="date-selector">
+                    <label for="datePicker">Select Date:</label>
+                    <input type="date" id="datePicker" />
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block; transition: transform 0.3s ease;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="summary-card" id="summaryCard" style="display: none;">
+                <button class="summary-card-toggle" id="summaryCardToggle" aria-label="Toggle summary card">−</button>
+                <div class="summary-label">Total Withdrawn</div>
+                <div class="summary-value" id="totalAmount">₵0.00</div>
+                <div class="summary-date" id="summaryDate">--</div>
+            </div>
+
+            <!-- Transactions Container -->
+            <div class="transactions-container">
+                <div class="transactions-header">
+                    <div>
+                        <h2 class="transactions-title">All Withdrawal Transactions</h2>
+                    </div>
+                    <button id="newWithdrawalBtn" class="new-withdrawal-btn" type="button" title="Click to create a new withdrawal">
+                        <span style="color: #ffffff !important; display: inline-block; font-size: 18px; font-weight: 700; line-height: 1;">+</span>
+                        <span style="color: #ffffff !important; display: inline-block; font-size: 13px; font-weight: 600; line-height: 1;">New Withdrawal</span>
+                    </button>
+                </div>
+                <div id="transactionsContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading withdrawals...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/auth-check.js"></script>
+    <script src="/api-client.js"></script>
+    <script src="/dialog.js"></script>
+    <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateShort(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatPhone(phone) {
+            if (!phone) return 'N/A';
+            const digits = phone.replace(/\D/g, '');
+            if (digits.length === 10) {
+                return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+            }
+            return phone;
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        let currentDate = null;
+        let allClients = [];
+        let allAgents = [];
+
+        // Load clients and agents for dropdowns
+        async function loadDropdownData() {
+            try {
+                const [clientsResponse, agentsResponse] = await Promise.all([
+                    AdminAPI.getAllClients(),
+                    AdminAPI.getAgents()
+                ]);
+                
+                if (clientsResponse && clientsResponse.success) {
+                    allClients = clientsResponse.data || [];
+                }
+                
+                if (agentsResponse && agentsResponse.success) {
+                    allAgents = agentsResponse.data || [];
+                }
+            } catch (error) {
+                console.error('Error loading dropdown data:', error);
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error('Failed to load clients and agents. Please refresh the page.', 'Loading Error');
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            return str.replace(/[&<>"']/g, (char) => {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return map[char] || char;
+            });
+        }
+
+        async function showNewWithdrawalDialog() {
+            console.log('showNewWithdrawalDialog called');
+            console.log('allClients:', allClients.length);
+            console.log('allAgents:', allAgents.length);
+            
+            // Reload clients and agents if they're empty
+            if (allClients.length === 0 || allAgents.length === 0) {
+                console.log('🔄 Reloading clients and agents...');
+                await loadDropdownData();
+                console.log('✅ Reloaded - allClients:', allClients.length, 'allAgents:', allAgents.length);
+            }
+            
+            // Remove any existing dialog
+            const existingOverlay = document.getElementById('newWithdrawalOverlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'dialog-overlay';
+            overlay.id = 'newWithdrawalOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '10000';
+            overlay.style.opacity = '0';
+            overlay.style.visibility = 'hidden';
+            overlay.style.transition = 'all 0.3s ease';
+
+            const dialog = document.createElement('div');
+            dialog.className = 'dialog-box';
+            dialog.style.maxWidth = '600px';
+            dialog.style.width = '90%';
+            dialog.style.maxHeight = '90vh';
+            dialog.style.background = 'white';
+            dialog.style.borderRadius = '12px';
+            dialog.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            dialog.style.padding = '0';
+            dialog.style.transform = 'scale(0.9) translateY(-20px)';
+            dialog.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            dialog.style.border = '1px solid rgba(226, 232, 240, 0.8)';
+            dialog.style.overflow = 'hidden';
+            dialog.style.display = 'flex';
+            dialog.style.flexDirection = 'column';
+
+            dialog.innerHTML = `
+                <div class="dialog-header">
+                    <div class="dialog-icon error">💰</div>
+                    <h3 class="dialog-title">New Withdrawal</h3>
+                    <button class="close-dialog-btn">×</button>
+                </div>
+                <div class="dialog-body">
+                    <form class="withdrawal-dialog-form" id="withdrawalForm" onsubmit="event.preventDefault(); event.stopPropagation(); console.log('🚫 Form submit prevented'); return false;" novalidate>
+                        <div class="form-group">
+                            <label for="withdrawalClient">Client Name *</label>
+                            <div class="client-search-container">
+                                <input 
+                                    type="text" 
+                                    id="withdrawalClient" 
+                                    class="client-search-input" 
+                                    placeholder="Type to search for a client..."
+                                    autocomplete="off"
+                                    required
+                                />
+                                <div class="client-suggestions" id="clientSuggestions"></div>
+                                <input type="hidden" id="selectedClientId" />
+                                <div class="selected-client-info" id="selectedClientInfo"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalAmount">Amount (₵) *</label>
+                            <input type="number" id="withdrawalAmount" step="0.01" min="0.01" max="1000000" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalAgent">Assigned Agent *</label>
+                            <select id="withdrawalAgent" required>
+                                <option value="">Select an agent...</option>
+                                ${allAgents.filter(agent => agent && agent.id && agent.name && agent.name.trim()).map(agent => `
+                                    <option value="${agent.id}">${escapeHtml(agent.name)}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentReceiver">Payment Received By *</label>
+                            <select id="paymentReceiver" required>
+                                <option value="">Select receiver...</option>
+                                <option value="Customer">Customer</option>
+                                <option value="Assigned agent">Assigned agent</option>
+                                <option value="Unknown">Unknown</option>
+                            </select>
+                            <div id="receiverInfo" style="margin-top: 8px; padding: 8px 12px; background: rgba(75, 85, 99, 0.05); border: 1px solid rgba(75, 85, 99, 0.15); border-radius: 6px; font-size: 12px; color: var(--text-primary); display: none;">
+                                <strong>Receiver:</strong> <span id="receiverNameDisplay"></span>
+                                <span id="receiverContactDisplay" style="display: none;"><br><strong>Contact:</strong> <span id="receiverContactText"></span></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalNotes">Notes (optional)</label>
+                            <textarea id="withdrawalNotes" class="dialog-textarea" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="dialog-footer">
+                    <button type="button" class="dialog-btn dialog-btn-secondary" id="withdrawalCancel">Cancel</button>
+                    <button type="button" class="dialog-btn dialog-btn-primary" id="withdrawalSubmit">Create Withdrawal</button>
+                </div>
+            `;
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            
+            console.log('Dialog appended to body');
+            console.log('Overlay element:', overlay);
+            console.log('Dialog element:', dialog);
+
+            // Client search functionality
+            const clientInput = document.getElementById('withdrawalClient');
+            const clientSuggestions = document.getElementById('clientSuggestions');
+            const selectedClientId = document.getElementById('selectedClientId');
+            const selectedClientInfo = document.getElementById('selectedClientInfo');
+            const agentSelect = document.getElementById('withdrawalAgent');
+            
+            // Clean up empty options from agent dropdown
+            if (agentSelect) {
+                // Remove any options with empty values (except the placeholder)
+                const options = Array.from(agentSelect.options);
+                options.forEach((option, index) => {
+                    // Skip the first option (placeholder) and remove any empty agent options
+                    if (index > 0 && (!option.value || option.value === '' || !option.textContent || option.textContent.trim() === '')) {
+                        option.remove();
+                    }
+                });
+            }
+            const paymentReceiverSelect = document.getElementById('paymentReceiver');
+            const receiverInfo = document.getElementById('receiverInfo');
+            const receiverNameDisplay = document.getElementById('receiverNameDisplay');
+            const receiverContactDisplay = document.getElementById('receiverContactDisplay');
+            const receiverContactText = document.getElementById('receiverContactText');
+            let selectedClient = null;
+            let receiverDetails = { name: '', contact: '' };
+            let isCreatingWithdrawal = false; // Flag to prevent automatic submission
+            
+            // Explicitly clear all form fields
+            if (clientInput) clientInput.value = '';
+            if (selectedClientId) selectedClientId.value = '';
+            if (selectedClientInfo) {
+                selectedClientInfo.innerHTML = '';
+                selectedClientInfo.classList.remove('show');
+            }
+            if (document.getElementById('withdrawalAmount')) document.getElementById('withdrawalAmount').value = '';
+            if (agentSelect) agentSelect.value = '';
+            if (paymentReceiverSelect) {
+                paymentReceiverSelect.value = '';
+                paymentReceiverSelect.dataset.previousValue = '';
+            }
+            if (document.getElementById('withdrawalNotes')) document.getElementById('withdrawalNotes').value = '';
+            if (receiverInfo) receiverInfo.style.display = 'none';
+            if (receiverNameDisplay) receiverNameDisplay.textContent = '';
+            if (receiverContactText) receiverContactText.textContent = '';
+            if (receiverContactDisplay) receiverContactDisplay.style.display = 'none';
+            selectedClient = null;
+            receiverDetails = { name: '', contact: '' };
+            isCreatingWithdrawal = false;
+            
+            console.log('✅ All form fields cleared and reset');
+            
+            // Force show the dialog
+            setTimeout(() => {
+                overlay.classList.add('show');
+                overlay.style.opacity = '1';
+                overlay.style.visibility = 'visible';
+                dialog.style.transform = 'scale(1) translateY(0)';
+                console.log('Dialog should be visible now');
+                console.log('Overlay computed style:', window.getComputedStyle(overlay));
+            }, 50);
+
+            function filterClients(searchTerm) {
+                console.log('🔍 filterClients called with:', searchTerm);
+                console.log('🔍 allClients length:', allClients.length);
+                console.log('🔍 allClients sample:', allClients.slice(0, 2));
+                console.log('🔍 clientSuggestions element:', clientSuggestions);
+                
+                if (!searchTerm || searchTerm.trim() === '') {
+                    clientSuggestions.classList.remove('show');
+                    return;
+                }
+                
+                // Ensure allClients is an array
+                if (!Array.isArray(allClients) || allClients.length === 0) {
+                    console.warn('⚠️ allClients is empty or not an array');
+                    clientSuggestions.innerHTML = '<div class="client-suggestion-item" style="color: var(--text-secondary);">No clients loaded. Please refresh the page.</div>';
+                    clientSuggestions.classList.add('show');
+                    return;
+                }
+
+                const term = searchTerm.toLowerCase().trim();
+                // Extract digits from search term for phone number matching
+                const termDigits = term.replace(/\D/g, '');
+                
+                const filtered = allClients.filter(client => {
+                    // Name search (case-insensitive)
+                    if (client.name && client.name.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    // Phone search - match digits only
+                    if (client.phone) {
+                        const clientPhoneDigits = client.phone.replace(/\D/g, '');
+                        if (termDigits && clientPhoneDigits.includes(termDigits)) {
+                            return true;
+                        }
+                        // Also try original term in case phone has formatting
+                        if (client.phone.includes(term)) {
+                            return true;
+                        }
+                    }
+                    // Agent name search
+                    if (client.agent_name && client.agent_name.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    return false;
+                }).slice(0, 10); // Limit to 10 results
+
+                console.log('🔍 Filtered clients:', filtered.length);
+
+                if (filtered.length === 0) {
+                    clientSuggestions.innerHTML = '<div class="client-suggestion-item" style="color: var(--text-secondary);">No clients found</div>';
+                    clientSuggestions.classList.add('show');
+                    console.log('✅ Showing "No clients found" message');
+                    return;
+                }
+
+                clientSuggestions.innerHTML = filtered.map(client => `
+                    <div class="client-suggestion-item" data-client-id="${client.id}" data-agent-id="${client.agent_id}">
+                        <div class="client-suggestion-name">${escapeHtml(client.name)}</div>
+                        <div class="client-suggestion-details">${formatPhone(client.phone)} • Agent: ${escapeHtml(client.agent_name || 'Unknown')} • Balance: ${formatCurrency(client.current_balance || 0)}</div>
+                    </div>
+                `).join('');
+
+                clientSuggestions.classList.add('show');
+                console.log('✅ Suggestions shown, count:', filtered.length);
+                console.log('✅ clientSuggestions.classList:', clientSuggestions.classList.toString());
+
+                // Add click handlers to suggestions
+                clientSuggestions.querySelectorAll('.client-suggestion-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const clientId = parseInt(this.dataset.clientId);
+                        const agentId = parseInt(this.dataset.agentId);
+                        selectedClient = allClients.find(c => c.id === clientId);
+                        
+                        if (selectedClient) {
+                            selectedClientId.value = clientId;
+                            clientInput.value = selectedClient.name;
+                            clientSuggestions.classList.remove('show');
+                            
+                            // Auto-fill agent - ensure we use the agent ID as a string
+                            if (agentId && agentSelect) {
+                                const agentIdStr = String(agentId);
+                                // Check if the option exists before setting
+                                const optionExists = Array.from(agentSelect.options).some(opt => opt.value === agentIdStr);
+                                if (optionExists) {
+                                    agentSelect.value = agentIdStr;
+                                } else {
+                                    console.warn('⚠️ Agent ID not found in dropdown:', agentId);
+                                    // Try to find agent by matching the client's agent_id
+                                    const matchingAgent = allAgents.find(a => a.id === agentId);
+                                    if (matchingAgent) {
+                                        console.log('✅ Found matching agent:', matchingAgent);
+                                    }
+                                }
+                            }
+                            
+                            const clientRate = Math.max(0, parseFloat(selectedClient.rate) || 0);
+                            // Show selected client info with commission context
+                            selectedClientInfo.innerHTML = `
+                                <strong>Selected:</strong> ${escapeHtml(selectedClient.name)} (${formatPhone(selectedClient.phone)})<br>
+                                <strong>Agent:</strong> ${escapeHtml(selectedClient.agent_name || 'Unknown')}<br>
+                                <strong>Balance:</strong> ${formatCurrency(selectedClient.current_balance || 0)}<br>
+                                <strong>Rate:</strong> ${formatCurrency(clientRate)}<br>
+                                <strong>Commission Threshold (31 boxes):</strong> ${formatCurrency(clientRate)}<br>
+                                <div style="margin-top:6px; font-size:12px; color: var(--text-secondary);">
+                                    Commission is tracked cumulatively. The system will automatically deduct the client's rate as commission when cumulative withdrawals reach the threshold (₵${clientRate.toFixed(2)}). If this withdrawal doesn't reach the threshold, it will be tracked until subsequent withdrawals meet the requirement.
+                                </div>
+                            `;
+                            selectedClientInfo.classList.add('show');
+                            
+                            // Auto-update receiver if "Customer" is selected
+                            if (paymentReceiverSelect.value === 'Customer') {
+                                receiverDetails.name = selectedClient.name;
+                                receiverNameDisplay.textContent = selectedClient.name;
+                                receiverContactDisplay.style.display = 'none';
+                                receiverInfo.style.display = 'block';
+                            }
+                        }
+                    });
+                });
+            }
+
+            clientInput.addEventListener('input', function() {
+                filterClients(this.value);
+                if (this.value === '') {
+                    selectedClientId.value = '';
+                    selectedClient = null;
+                    selectedClientInfo.classList.remove('show');
+                }
+            });
+
+            clientInput.addEventListener('focus', function() {
+                if (this.value) {
+                    filterClients(this.value);
+                }
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!clientInput.contains(e.target) && !clientSuggestions.contains(e.target)) {
+                    clientSuggestions.classList.remove('show');
+                }
+            });
+
+            // Handle payment receiver selection
+            paymentReceiverSelect.addEventListener('change', async function() {
+                const receiver = this.value;
+                receiverInfo.style.display = 'none';
+                
+                // Only reset receiverDetails if changing FROM Unknown TO something else
+                // If we're setting Unknown, we'll fill it in the dialog, so don't reset yet
+                const previousReceiver = paymentReceiverSelect.dataset.previousValue || '';
+                if (previousReceiver === 'Unknown' && receiver !== 'Unknown') {
+                    // Changing away from Unknown - reset the details
+                    receiverDetails = { name: '', contact: '' };
+                    console.log('🔄 Reset receiverDetails - changed from Unknown to', receiver);
+                } else if (receiver !== 'Unknown') {
+                    // Selecting something other than Unknown - reset
+                    receiverDetails = { name: '', contact: '' };
+                    console.log('🔄 Reset receiverDetails - selected', receiver);
+                } else {
+                    // Selecting Unknown - keep existing details if any
+                    console.log('ℹ️ Selected Unknown - keeping existing receiverDetails:', receiverDetails);
+                }
+                paymentReceiverSelect.dataset.previousValue = receiver;
+
+                if (receiver === 'Customer') {
+                    if (selectedClient) {
+                        // Auto-fill customer name
+                        receiverDetails.name = selectedClient.name;
+                        receiverNameDisplay.textContent = selectedClient.name;
+                        receiverContactDisplay.style.display = 'none';
+                        receiverInfo.style.display = 'block';
+                    } else {
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.warning('Please select a client first.', 'No Client Selected');
+                        } else {
+                            alert('Please select a client first.');
+                        }
+                        this.value = '';
+                    }
+                } else if (receiver === 'Assigned agent') {
+                    // Get selected agent name
+                    const selectedAgentId = parseInt(agentSelect.value);
+                    const selectedAgent = allAgents.find(a => a.id === selectedAgentId);
+                    if (selectedAgent) {
+                        receiverDetails.name = selectedAgent.name;
+                        receiverNameDisplay.textContent = selectedAgent.name;
+                        receiverContactDisplay.style.display = 'none';
+                        receiverInfo.style.display = 'block';
+                    } else {
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.warning('Please select an agent first.', 'No Agent Selected');
+                        } else {
+                            alert('Please select an agent first.');
+                        }
+                        this.value = '';
+                    }
+                } else if (receiver === 'Unknown') {
+                    // Show dialog to get name and contact
+                    await showUnknownReceiverDialog();
+                }
+            });
+
+            function showUnknownReceiverDialog() {
+                return new Promise((resolve) => {
+                    if (typeof Dialog === 'undefined') {
+                        let name = '';
+                        let contact = '';
+                        
+                        // Keep prompting until both fields are filled
+                        while (!name.trim()) {
+                            name = prompt('Enter receiver name (required):') || '';
+                        }
+                        
+                        while (!contact.trim() || contact.replace(/\D/g, '').length !== 10) {
+                            contact = prompt('Enter receiver contact (required, 10 digits):') || '';
+                            const contactDigits = contact.replace(/\D/g, '');
+                            if (contactDigits.length !== 10) {
+                                alert('Contact number must be exactly 10 digits.');
+                            }
+                        }
+                        
+                        receiverDetails.name = name.trim();
+                        receiverDetails.contact = contact.replace(/\D/g, '');
+                        
+                        if (receiverNameDisplay) {
+                            receiverNameDisplay.textContent = receiverDetails.name;
+                        }
+                        if (receiverContactText) {
+                            receiverContactText.textContent = receiverDetails.contact;
+                            if (receiverContactDisplay) {
+                                receiverContactDisplay.style.display = 'block';
+                            }
+                        }
+                        if (receiverInfo) {
+                            receiverInfo.style.display = 'block';
+                        }
+                        
+                        resolve();
+                        return;
+                    }
+
+                    // Create a custom dialog for unknown receiver
+                    const unknownOverlay = document.createElement('div');
+                    unknownOverlay.className = 'dialog-overlay';
+                    unknownOverlay.id = 'unknownReceiverOverlay';
+                    unknownOverlay.style.zIndex = '10001';
+                    unknownOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'; // Lighter overlay so main dialog is visible
+
+                    const unknownDialog = document.createElement('div');
+                    unknownDialog.className = 'dialog-box';
+                    unknownDialog.style.maxWidth = '450px';
+
+                    unknownDialog.innerHTML = `
+                        <div class="dialog-header">
+                            <div class="dialog-icon info">👤</div>
+                            <h3 class="dialog-title">Unknown Receiver Details</h3>
+                        </div>
+                        <div class="dialog-body">
+                            <div style="display:grid; gap:12px;">
+                                <div class="form-group">
+                                    <label for="unknownReceiverName">Receiver Name * (Letters only, max 20)</label>
+                                    <input type="text" id="unknownReceiverName" class="client-search-input" placeholder="Enter receiver name..." style="width:100%;" autocomplete="off" form="" maxlength="20" pattern="[A-Za-z\s]*" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="unknownReceiverContact">Contact * (10 digits only)</label>
+                                    <input type="text" id="unknownReceiverContact" class="client-search-input" placeholder="Enter contact number..." style="width:100%;" autocomplete="off" form="" maxlength="10" pattern="[0-9]*" inputmode="numeric" required />
+                                </div>
+                            </div>
+                            <div style="margin-top: 12px; padding: 10px; background: rgba(75, 85, 99, 0.05); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">
+                                Fill in both the receiver name and contact number. Both fields are required.
+                            </div>
+                        </div>
+                    `;
+
+                    unknownOverlay.appendChild(unknownDialog);
+                    document.body.appendChild(unknownOverlay);
+                    
+                    // CRITICAL: Keep main withdrawal dialog visible and accessible
+                    const mainOverlay = document.querySelector('.dialog-overlay:not(#unknownReceiverOverlay)');
+                    if (mainOverlay) {
+                        // Keep main dialog visible - don't hide it
+                        mainOverlay.style.display = 'flex';
+                        mainOverlay.style.zIndex = '10000';
+                        mainOverlay.style.pointerEvents = 'auto'; // Keep it interactive
+                        
+                        const mainDialogBox = mainOverlay.querySelector('.dialog-box');
+                        if (mainDialogBox) {
+                            mainDialogBox.style.pointerEvents = 'auto';
+                            mainDialogBox.style.opacity = '0.95'; // Slightly transparent but visible
+                        }
+                        
+                        // CRITICAL: Ensure Create Withdrawal button is ALWAYS visible and clickable
+                        const createBtn = document.getElementById('withdrawalSubmit');
+                        if (createBtn) {
+                            // Use setAttribute to force styles with !important
+                            createBtn.setAttribute('style', 
+                                'display: block !important; ' +
+                                'visibility: visible !important; ' +
+                                'opacity: 1 !important; ' +
+                                'pointer-events: auto !important; ' +
+                                'z-index: 10002 !important; ' +
+                                'position: relative !important; ' +
+                                'cursor: pointer !important;'
+                            );
+                            createBtn.disabled = false;
+                            console.log('✅ Create Withdrawal button FORCED to be visible');
+                        }
+                    }
+
+                    setTimeout(() => unknownOverlay.classList.add('show'), 10);
+
+                    function saveReceiverDetails() {
+                        // CRITICAL: Read values BEFORE dialog is removed from DOM
+                        const nameField = document.getElementById('unknownReceiverName');
+                        const contactField = document.getElementById('unknownReceiverContact');
+                        
+                        if (!nameField) {
+                            console.error('❌ Unknown receiver name field not found');
+                            return false;
+                        }
+                        
+                        const name = nameField.value.trim();
+                        const contact = contactField ? contactField.value.trim() : '';
+
+                        console.log('🔍 Reading receiver details - Name field value:', name);
+                        console.log('🔍 Reading receiver details - Contact field value:', contact);
+
+                        // Validate name
+                        if (!name) {
+                            if (typeof Dialog !== 'undefined') {
+                                Dialog.error('Receiver name is required.', 'Validation Error');
+                            } else {
+                                alert('Receiver name is required.');
+                            }
+                            nameField.focus();
+                            return false;
+                        }
+
+                        // Validate contact - must be exactly 10 digits
+                        if (!contact) {
+                            if (typeof Dialog !== 'undefined') {
+                                Dialog.error('Contact number is required. Please enter 10 digits.', 'Validation Error');
+                            } else {
+                                alert('Contact number is required. Please enter 10 digits.');
+                            }
+                            if (contactField) contactField.focus();
+                            return false;
+                        }
+
+                        // Validate contact format - must be exactly 10 digits
+                        const contactDigits = contact.replace(/\D/g, '');
+                        if (contactDigits.length !== 10) {
+                            if (typeof Dialog !== 'undefined') {
+                                Dialog.error('Contact number must be exactly 10 digits.', 'Validation Error');
+                            } else {
+                                alert('Contact number must be exactly 10 digits.');
+                            }
+                            if (contactField) contactField.focus();
+                            return false;
+                        }
+
+                        // Update receiverDetails object - ensure we're updating the correct object
+                        receiverDetails.name = name;
+                        receiverDetails.contact = contactDigits; // Use cleaned digits
+                        
+                        // Update display
+                        if (receiverNameDisplay) {
+                            receiverNameDisplay.textContent = receiverDetails.name;
+                        }
+                        if (receiverDetails.contact && receiverContactText) {
+                            receiverContactText.textContent = receiverDetails.contact;
+                            if (receiverContactDisplay) {
+                                receiverContactDisplay.style.display = 'block';
+                            }
+                        } else {
+                            if (receiverContactDisplay) {
+                                receiverContactDisplay.style.display = 'none';
+                            }
+                        }
+                        if (receiverInfo) {
+                            receiverInfo.style.display = 'block';
+                        }
+                        
+                        // Verify the data is saved
+                        console.log('✅ Receiver details saved automatically:', receiverDetails);
+                        console.log('✅ Receiver name:', receiverDetails.name);
+                        console.log('✅ Receiver contact:', receiverDetails.contact);
+                        console.log('✅ Payment receiver select value:', paymentReceiverSelect ? paymentReceiverSelect.value : 'N/A');
+                        console.log('✅ Closing Unknown receiver dialog - withdrawal will NOT be created yet');
+                        
+                        // Double-check the saved values
+                        console.log('🔍 Verification - receiverDetails.name after save:', receiverDetails.name);
+                        console.log('🔍 Verification - receiverDetails.contact after save:', receiverDetails.contact);
+                        
+                        return true;
+                    }
+
+                    function closeUnknownDialog() {
+                        // CRITICAL: Read values BEFORE any DOM manipulation
+                        const nameField = document.getElementById('unknownReceiverName');
+                        const contactField = document.getElementById('unknownReceiverContact');
+                        const nameValue = nameField ? nameField.value.trim() : '';
+                        const contactValue = contactField ? contactField.value.trim() : '';
+                        
+                        console.log('🔍 closeUnknownDialog - Reading values directly:');
+                        console.log('🔍 Name field exists?', !!nameField);
+                        console.log('🔍 Name field value:', nameValue);
+                        console.log('🔍 Contact field value:', contactValue);
+                        
+                        // Save details before closing - MUST read values before removing dialog
+                        if (saveReceiverDetails()) {
+                            // Double-check that values were saved
+                            console.log('🔍 After saveReceiverDetails - receiverDetails.name:', receiverDetails.name);
+                            console.log('🔍 After saveReceiverDetails - receiverDetails.contact:', receiverDetails.contact);
+                            
+                            // If saveReceiverDetails didn't work, try direct assignment
+                            if (!receiverDetails.name || receiverDetails.name.trim() === '') {
+                                console.log('⚠️ saveReceiverDetails failed, using direct values');
+                                receiverDetails.name = nameValue;
+                                receiverDetails.contact = contactValue;
+                                if (receiverNameDisplay) {
+                                    receiverNameDisplay.textContent = nameValue;
+                                }
+                                if (contactValue && receiverContactText) {
+                                    receiverContactText.textContent = contactValue;
+                                    if (receiverContactDisplay) {
+                                        receiverContactDisplay.style.display = 'block';
+                                    }
+                                }
+                                if (receiverInfo) {
+                                    receiverInfo.style.display = 'block';
+                                }
+                                console.log('✅ Direct assignment complete - receiverDetails:', receiverDetails);
+                            }
+                            
+                            console.log('🔵 Closing Unknown receiver dialog - NO withdrawal will be created');
+                            unknownOverlay.classList.remove('show');
+                            setTimeout(() => {
+                                unknownOverlay.remove();
+                                // Resolve the promise but ensure no form submission happens
+                                console.log('🔵 Resolving promise - withdrawal form should NOT be submitted');
+                                // Ensure flag is NOT set - withdrawal should NOT be created
+                                isCreatingWithdrawal = false;
+                                
+                                // Ensure the main withdrawal dialog and buttons are visible and functional
+                                const mainDialog = document.querySelector('.dialog-overlay:not(#unknownReceiverOverlay)');
+                                const createBtn = document.getElementById('withdrawalSubmit');
+                                const cancelBtn = document.getElementById('withdrawalCancel');
+                                
+                                if (mainDialog) {
+                                    mainDialog.style.display = 'flex';
+                                    mainDialog.style.zIndex = '10000';
+                                    mainDialog.style.pointerEvents = 'auto';
+                                    const mainDialogBox = mainDialog.querySelector('.dialog-box');
+                                    if (mainDialogBox) {
+                                        mainDialogBox.style.pointerEvents = 'auto';
+                                    }
+                                    console.log('✅ Main withdrawal dialog is visible and active');
+                                }
+                                
+                                if (createBtn) {
+                                    // Force button visibility with !important
+                                    createBtn.setAttribute('style', 
+                                        'display: block !important; ' +
+                                        'visibility: visible !important; ' +
+                                        'opacity: 1 !important; ' +
+                                        'pointer-events: auto !important; ' +
+                                        'z-index: 10001 !important; ' +
+                                        'position: relative !important; ' +
+                                        'cursor: pointer !important;'
+                                    );
+                                    createBtn.disabled = false;
+                                    console.log('✅ Create Withdrawal button FORCED visible');
+                                }
+                                
+                                if (cancelBtn) {
+                                    cancelBtn.style.pointerEvents = 'auto';
+                                    cancelBtn.disabled = false;
+                                }
+                                
+                                resolve();
+                            }, 300);
+                        } else {
+                            console.log('❌ Cannot close - receiver name is required');
+                        }
+                    }
+
+                    // Handle Enter key in inputs
+                    const nameInput = document.getElementById('unknownReceiverName');
+                    const contactInput = document.getElementById('unknownReceiverContact');
+                    
+                    // Auto-close timer
+                    let autoCloseTimer = null;
+                    
+                    function checkAndAutoClose() {
+                        const nameValue = nameInput ? nameInput.value.trim() : '';
+                        const contactValue = contactInput ? contactInput.value.trim() : '';
+                        const contactDigits = contactValue.replace(/\D/g, '');
+                        
+                        // Only auto-close if BOTH name and contact (10 digits) are filled
+                        if (nameValue && contactDigits.length === 10) {
+                            // Clear any existing timer
+                            if (autoCloseTimer) {
+                                clearTimeout(autoCloseTimer);
+                            }
+                            
+                            // Set timer to auto-close after 1.5 seconds of no typing
+                            autoCloseTimer = setTimeout(() => {
+                                if (saveReceiverDetails()) {
+                                    closeUnknownDialog();
+                                }
+                            }, 1500);
+                        } else {
+                            // Clear timer if fields are not complete
+                            if (autoCloseTimer) {
+                                clearTimeout(autoCloseTimer);
+                            }
+                        }
+                    }
+                    
+                    if (nameInput) {
+                        // Restrict to letters only and max 20 characters
+                        nameInput.addEventListener('input', function(e) {
+                            // Remove any non-letter characters (allow spaces)
+                            let value = this.value.replace(/[^A-Za-z\s]/g, '');
+                            // Limit to 20 characters
+                            if (value.length > 20) {
+                                value = value.substring(0, 20);
+                            }
+                            this.value = value;
+                            checkAndAutoClose();
+                        });
+                        
+                        nameInput.addEventListener('keydown', function(e) {
+                            // Clear timer on keypress
+                            if (autoCloseTimer) {
+                                clearTimeout(autoCloseTimer);
+                            }
+                            
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (saveReceiverDetails()) {
+                                    closeUnknownDialog();
+                                }
+                            } else {
+                                // Reset timer on any other key
+                                checkAndAutoClose();
+                            }
+                        });
+                        
+                        // Auto-close when name field loses focus (blur) if both fields are filled
+                        nameInput.addEventListener('blur', function() {
+                            const nameValue = nameInput.value.trim();
+                            const contactValue = contactInput ? contactInput.value.trim() : '';
+                            const contactDigits = contactValue.replace(/\D/g, '');
+                            
+                            if (nameValue && contactDigits.length === 10) {
+                                setTimeout(() => {
+                                    if (saveReceiverDetails()) {
+                                        closeUnknownDialog();
+                                    }
+                                }, 300);
+                            }
+                        });
+                    }
+                    
+                    if (contactInput) {
+                        // Restrict to digits only and max 10 characters
+                        contactInput.addEventListener('input', function(e) {
+                            // Remove any non-digit characters
+                            let value = this.value.replace(/[^0-9]/g, '');
+                            // Limit to 10 characters
+                            if (value.length > 10) {
+                                value = value.substring(0, 10);
+                            }
+                            this.value = value;
+                            // Check if both fields are now complete
+                            checkAndAutoClose();
+                        });
+                        
+                        contactInput.addEventListener('keydown', function(e) {
+                            // Clear timer on keypress
+                            if (autoCloseTimer) {
+                                clearTimeout(autoCloseTimer);
+                            }
+                            
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (saveReceiverDetails()) {
+                                    closeUnknownDialog();
+                                }
+                            }
+                        });
+                        
+                        // Auto-close when contact field loses focus (blur) if both fields are filled
+                        contactInput.addEventListener('blur', function() {
+                            const nameValue = nameInput ? nameInput.value.trim() : '';
+                            const contactValue = this.value.trim();
+                            const contactDigits = contactValue.replace(/\D/g, '');
+                            
+                            if (nameValue && contactDigits.length === 10) {
+                                setTimeout(() => {
+                                    if (saveReceiverDetails()) {
+                                        closeUnknownDialog();
+                                    }
+                                }, 300);
+                            }
+                        });
+                    }
+
+                    // No close button - dialog auto-closes when both name and contact are filled
+
+                    // Click outside to close - validates both fields before closing
+                    unknownOverlay.addEventListener('click', (e) => {
+                        if (e.target === unknownOverlay) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Validate both fields before closing
+                            if (saveReceiverDetails()) {
+                                closeUnknownDialog();
+                            }
+                        }
+                    });
+                    
+                    // Escape key to close - saves and closes
+                    document.addEventListener('keydown', function escHandler(e) {
+                        if (e.key === 'Escape' && document.getElementById('unknownReceiverOverlay')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            closeUnknownDialog();
+                            document.removeEventListener('keydown', escHandler);
+                        }
+                    });
+                });
+            }
+
+            // Handle submit - ONLY when Create Withdrawal button is explicitly clicked
+            document.getElementById('withdrawalSubmit').addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Prevent duplicate submissions
+                if (isCreatingWithdrawal) {
+                    console.log('🚫 Already processing withdrawal, preventing duplicate submission.');
+                    return;
+                }
+                
+                // Set flag to indicate this is an intentional withdrawal creation
+                isCreatingWithdrawal = true;
+                console.log('🔵 Create Withdrawal button clicked - this is the ONLY way to create withdrawal');
+                
+                const form = document.getElementById('withdrawalForm');
+                
+                // Custom validation for client input
+                if (!selectedClientId.value || !selectedClient) {
+                    isCreatingWithdrawal = false;
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error('Please select a client from the suggestions list.', 'Validation Error');
+                    } else {
+                        alert('Please select a client from the suggestions list.');
+                    }
+                    clientInput.focus();
+                    return;
+                }
+                
+                // Manual validation instead of form.checkValidity() to prevent auto-submit
+                const formValid = selectedClientId.value && selectedClient && 
+                                 document.getElementById('withdrawalAmount').value && 
+                                 agentSelect.value && 
+                                 paymentReceiverSelect.value;
+                
+                if (!formValid) {
+                    isCreatingWithdrawal = false;
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error('Please fill in all required fields.', 'Validation Error');
+                    } else {
+                        form.reportValidity();
+                    }
+                    return;
+                }
+
+                const clientId = parseInt(selectedClientId.value);
+                const agentId = parseInt(agentSelect.value);
+                const amount = parseFloat(document.getElementById('withdrawalAmount').value);
+                const paymentReceiver = document.getElementById('paymentReceiver').value;
+                const notes = document.getElementById('withdrawalNotes').value.trim();
+
+                if (!clientId || !agentId || !amount || !paymentReceiver) {
+                    isCreatingWithdrawal = false;
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error('Please fill in all required fields. Make sure you have selected a client from the suggestions.', 'Validation Error');
+                    }
+                    return;
+                }
+
+                // Validate receiver details based on selection
+                console.log('🔍 Validating payment receiver:', paymentReceiver);
+                console.log('🔍 Receiver details object:', receiverDetails);
+                console.log('🔍 Receiver details type:', typeof receiverDetails);
+                console.log('🔍 Receiver details keys:', receiverDetails ? Object.keys(receiverDetails) : 'null');
+                
+                if (paymentReceiver === 'Unknown') {
+                    console.log('🔍 Checking Unknown receiver...');
+                    console.log('🔍 receiverDetails exists?', !!receiverDetails);
+                    console.log('🔍 receiverDetails.name exists?', !!receiverDetails?.name);
+                    console.log('🔍 Receiver name value:', receiverDetails?.name);
+                    console.log('🔍 Receiver name trimmed:', receiverDetails?.name?.trim());
+                    console.log('🔍 Receiver name length:', receiverDetails?.name?.length);
+                    
+                    // More lenient check - also check if the display shows the name
+                    const displayedName = receiverNameDisplay ? receiverNameDisplay.textContent : '';
+                    console.log('🔍 Displayed receiver name:', displayedName);
+                    
+                    if ((!receiverDetails || !receiverDetails.name || receiverDetails.name.trim() === '') && 
+                        (!displayedName || displayedName.trim() === '')) {
+                        console.error('❌ Unknown receiver validation failed - details missing');
+                        isCreatingWithdrawal = false;
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.error('Please provide receiver details for Unknown receiver. Make sure you have filled in the receiver name in the dialog and closed it properly.', 'Validation Error');
+                        } else {
+                            alert('Please provide receiver details for Unknown receiver.');
+                        }
+                        paymentReceiverSelect.focus();
+                        return;
+                    }
+                    
+                    // If display has name but receiverDetails doesn't, use display value
+                    if (displayedName && displayedName.trim() !== '' && (!receiverDetails.name || receiverDetails.name.trim() === '')) {
+                        console.log('⚠️ Using displayed name as fallback');
+                        if (!receiverDetails || typeof receiverDetails !== 'object') {
+                            receiverDetails = { name: '', contact: '' };
+                        }
+                        receiverDetails.name = displayedName.trim();
+                        if (receiverContactText && receiverContactText.textContent) {
+                            receiverDetails.contact = receiverContactText.textContent.trim();
+                        }
+                        // Update display to ensure consistency
+                        if (receiverNameDisplay) {
+                            receiverNameDisplay.textContent = receiverDetails.name;
+                        }
+                        if (receiverInfo) {
+                            receiverInfo.style.display = 'block';
+                        }
+                    }
+                    
+                    // Final verification - ensure receiverDetails has the name
+                    if (!receiverDetails || !receiverDetails.name || receiverDetails.name.trim() === '') {
+                        console.error('❌ Unknown receiver validation failed - receiverDetails still empty after fallback');
+                        isCreatingWithdrawal = false;
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.error('Please provide receiver details for Unknown receiver. Fill in the receiver name in the dialog and close it properly.', 'Validation Error');
+                        } else {
+                            alert('Please provide receiver details for Unknown receiver.');
+                        }
+                        paymentReceiverSelect.focus();
+                        return;
+                    }
+                    
+                    console.log('✅ Unknown receiver validated successfully');
+                    console.log('✅ Final receiverDetails:', receiverDetails);
+                } else if (paymentReceiver === 'Customer') {
+                    if (!selectedClient) {
+                        isCreatingWithdrawal = false;
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.error('Please select a client first.', 'Validation Error');
+                        }
+                        return;
+                    }
+                } else if (paymentReceiver === 'Assigned agent') {
+                    if (!agentId || isNaN(agentId)) {
+                        isCreatingWithdrawal = false;
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.error('Please select an agent first.', 'Validation Error');
+                        }
+                        return;
+                    }
+                }
+
+                // Check balance using selectedClient
+                // Note: Commission is tracked cumulatively and may not be deducted immediately
+                // We check for withdrawal amount only; backend handles commission logic
+                const clientBalance = selectedClient ? (selectedClient.current_balance || 0) : 0;
+                console.log('💰 Checking balance - Client balance:', clientBalance, 'Amount:', amount);
+                if (selectedClient && clientBalance < amount) {
+                    console.log('❌ Insufficient balance');
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error(`Insufficient balance. ${selectedClient.name} needs ${formatCurrency(amount)} for withdrawal but only has ${formatCurrency(clientBalance)}.`, 'Insufficient Balance');
+                    }
+                    isCreatingWithdrawal = false;
+                    return;
+                }
+                console.log('✅ Balance check passed');
+
+                // Calculate potential commission amount
+                // Note: Commission is calculated on the backend based on cumulative withdrawals
+                // For the confirmation dialog, we estimate based on whether withdrawal would trigger commission
+                // The actual commission deduction is handled by the backend
+                const clientRate = selectedClient ? (parseFloat(selectedClient.rate) || 0) : 0;
+                
+                // Check if withdrawal would leave balance less than commission (indicates commission might be deducted)
+                // If client is withdrawing all/most of balance, commission will likely be deducted
+                let commissionAmount = 0;
+                const balanceAfterWithdrawal = clientBalance - amount;
+                if (balanceAfterWithdrawal < clientRate && clientRate > 0) {
+                    // If withdrawing all/most, commission will likely be deducted
+                    commissionAmount = clientRate;
+                }
+                // Note: We can't accurately predict commission without checking cumulative withdrawals
+                // The backend will handle the actual commission calculation based on cumulative withdrawal tracking
+
+                // Show confirmation dialog
+                console.log('📋 About to show confirmation dialog');
+                console.log('📋 Payment receiver:', paymentReceiver);
+                console.log('📋 Receiver details:', receiverDetails);
+                console.log('📋 Selected client:', selectedClient);
+                console.log('📋 Amount:', amount);
+                console.log('📋 Potential commission:', commissionAmount);
+                
+                try {
+                    // Ensure receiverDetails is an object
+                    if (!receiverDetails || typeof receiverDetails !== 'object') {
+                        receiverDetails = { name: '', contact: '' };
+                    }
+                    
+                    const confirmed = await showConfirmationDialog(selectedClient, amount, paymentReceiver, receiverDetails, commissionAmount);
+                    console.log('📋 Confirmation result:', confirmed);
+                    if (!confirmed) {
+                        console.log('❌ User cancelled confirmation');
+                        isCreatingWithdrawal = false;
+                        return;
+                    }
+                    console.log('✅ User confirmed withdrawal');
+                } catch (error) {
+                    console.error('❌ Error in confirmation dialog:', error);
+                    isCreatingWithdrawal = false;
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error('An error occurred while showing the confirmation dialog. Please try again.', 'Error');
+                    } else {
+                        alert('An error occurred while showing the confirmation dialog. Please try again.');
+                    }
+                    return;
+                }
+
+                const submitBtn = document.getElementById('withdrawalSubmit');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+
+                // Build payment receiver info
+                let paymentReceiverInfo = paymentReceiver;
+                console.log('📝 Building payment receiver info...');
+                console.log('📝 Payment receiver:', paymentReceiver);
+                console.log('📝 Receiver details:', receiverDetails);
+                
+                if (paymentReceiver === 'Unknown') {
+                    // Use receiverDetails or fallback to displayed name
+                    const receiverName = receiverDetails?.name || (receiverNameDisplay ? receiverNameDisplay.textContent : '') || 'Unknown';
+                    paymentReceiverInfo = `Unknown: ${receiverName}`;
+                    const receiverContact = receiverDetails?.contact || (receiverContactText ? receiverContactText.textContent : '');
+                    if (receiverContact) {
+                        paymentReceiverInfo += ` (${receiverContact})`;
+                    }
+                    console.log('📝 Built Unknown receiver info:', paymentReceiverInfo);
+                } else if (paymentReceiver === 'Customer' && selectedClient) {
+                    paymentReceiverInfo = `Customer: ${selectedClient.name}`;
+                } else if (paymentReceiver === 'Assigned agent') {
+                    const selectedAgent = allAgents.find(a => a.id === agentId);
+                    if (selectedAgent) {
+                        paymentReceiverInfo = `Assigned agent: ${selectedAgent.name}`;
+                    }
+                }
+                
+                console.log('📝 Final payment receiver info:', paymentReceiverInfo);
+
+                try {
+                    const response = await AdminAPI.createWithdrawal({
+                        client_id: clientId,
+                        agent_id: agentId,
+                        amount: amount,
+                        transaction_date: currentDate || new Date().toISOString().split('T')[0],
+                        notes: notes || null,
+                        payment_receiver: paymentReceiverInfo
+                    });
+
+                    if (response && response.success) {
+                        closeDialog();
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.success('Withdrawal created successfully!', 'Success');
+                        }
+                        // Reload withdrawals
+                        loadDailyWithdrawals(currentDate || new Date().toISOString().split('T')[0]);
+                        console.log('✅ Withdrawal created successfully');
+                    } else {
+                        throw new Error(response?.error || 'Failed to create withdrawal');
+                    }
+                } catch (error) {
+                    console.error('❌ Error creating withdrawal:', error);
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.error(error.message || 'Failed to create withdrawal. Please try again.', 'Error');
+                    } else {
+                        alert('Failed to create withdrawal: ' + (error.message || 'Unknown error'));
+                    }
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    isCreatingWithdrawal = false; // Reset flag
+                    console.log('🔄 Reset isCreatingWithdrawal flag');
+                }
+            });
+
+            function closeDialog() {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 300);
+            }
+
+            document.getElementById('withdrawalCancel').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeDialog();
+            });
+            
+            const closeBtn = document.querySelector('.close-dialog-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeDialog();
+                });
+            }
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeDialog();
+                }
+            });
+
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeDialog();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
+
+            function showConfirmationDialog(client, amount, receiver, receiverDetails, commissionAmount = 0) {
+                return new Promise((resolve) => {
+                    if (typeof Dialog === 'undefined') {
+                        const confirmed = window.confirm(`Create withdrawal of ${formatCurrency(amount)} for ${client.name}?\nAuto commission: ${formatCurrency(commissionAmount)}\nTotal deduction: ${formatCurrency(amount + commissionAmount)}`);
+                        resolve(confirmed);
+                        return;
+                    }
+
+                    let receiverInfo = '';
+                    if (receiver === 'Customer') {
+                        receiverInfo = `<strong>Customer:</strong> ${escapeHtml(client.name)}`;
+                    } else if (receiver === 'Assigned agent') {
+                        const selectedAgent = allAgents.find(a => a.id === parseInt(agentSelect.value));
+                        receiverInfo = `<strong>Assigned Agent:</strong> ${escapeHtml(selectedAgent?.name || 'Unknown')}`;
+                    } else if (receiver === 'Unknown') {
+                        receiverInfo = `<strong>Unknown Receiver:</strong> ${escapeHtml(receiverDetails?.name || 'Not specified')}`;
+                        if (receiverDetails?.contact) {
+                            receiverInfo += `<br><strong>Contact:</strong> ${escapeHtml(receiverDetails.contact)}`;
+                        }
+                    }
+
+                    // Ensure the confirmation dialog appears above the withdrawal dialog
+                    // First, temporarily lower the withdrawal dialog's z-index
+                    const withdrawalOverlay = document.getElementById('newWithdrawalOverlay');
+                    const originalZIndex = withdrawalOverlay ? window.getComputedStyle(withdrawalOverlay).zIndex : null;
+                    if (withdrawalOverlay) {
+                        withdrawalOverlay.style.zIndex = '10000';
+                    }
+
+                    try {
+                        Dialog.show({
+                            title: 'Confirm Withdrawal',
+                            message: `
+                                <div style="display:grid; gap:12px; font-size:14px; line-height:1.6;">
+                                    <p style="margin:0;">Please confirm the withdrawal details:</p>
+                                    <div style="background:var(--background); padding:12px; border-radius:6px; border:1px solid var(--border-color);">
+                                        <div style="margin-bottom:8px;"><strong>Client:</strong> ${escapeHtml(client.name)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Amount:</strong> ${formatCurrency(amount)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Auto Commission:</strong> ${formatCurrency(commissionAmount)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Total Deduction:</strong> ${formatCurrency(amount + commissionAmount)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Agent:</strong> ${escapeHtml(allAgents.find(a => a.id === parseInt(agentSelect.value))?.name || 'Unknown')}</div>
+                                        <div>${receiverInfo}</div>
+                                    </div>
+                                </div>
+                            `,
+                            type: 'info',
+                            showCancel: true,
+                            confirmText: 'Confirm',
+                            cancelText: 'Cancel',
+                            onConfirm: () => {
+                                console.log('✅ Confirmation dialog: User confirmed');
+                                // Restore original z-index
+                                if (withdrawalOverlay && originalZIndex) {
+                                    withdrawalOverlay.style.zIndex = originalZIndex;
+                                }
+                                resolve(true);
+                            },
+                            onCancel: () => {
+                                console.log('❌ Confirmation dialog: User cancelled');
+                                // Restore original z-index
+                                if (withdrawalOverlay && originalZIndex) {
+                                    withdrawalOverlay.style.zIndex = originalZIndex;
+                                }
+                                resolve(false);
+                            }
+                        });
+
+                        // Ensure confirmation dialog has higher z-index and is visible
+                        setTimeout(() => {
+                            const confirmOverlay = document.getElementById('dialogOverlay');
+                            if (confirmOverlay) {
+                                confirmOverlay.style.zIndex = '10001';
+                                confirmOverlay.style.display = 'flex';
+                                confirmOverlay.style.visibility = 'visible';
+                                confirmOverlay.style.opacity = '1';
+                                console.log('✅ Confirmation dialog overlay created and shown');
+                            } else {
+                                console.error('❌ Confirmation dialog overlay not found');
+                                // Fallback to window.confirm
+                                const confirmed = window.confirm(`Create withdrawal of ${formatCurrency(amount)} for ${client.name}?\n\n${receiverInfo}`);
+                                if (withdrawalOverlay && originalZIndex) {
+                                    withdrawalOverlay.style.zIndex = originalZIndex;
+                                }
+                                resolve(confirmed);
+                            }
+                        }, 100);
+                    } catch (error) {
+                        console.error('❌ Error showing confirmation dialog:', error);
+                        // Fallback to window.confirm
+                        const confirmed = window.confirm(`Create withdrawal of ${formatCurrency(amount)} for ${client.name}?`);
+                        if (withdrawalOverlay && originalZIndex) {
+                            withdrawalOverlay.style.zIndex = originalZIndex;
+                        }
+                        resolve(confirmed);
+                    }
+                });
+            }
+        }
+
+        async function loadDailyWithdrawals(date, showLoading = true) {
+            const container = document.getElementById('transactionsContainer');
+
+            if (showLoading) {
+                container.innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading withdrawals...</div>
+                    </div>
+                `;
+            }
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getDailyWithdrawals(date);
+                console.log('📊 Withdrawals API Response:', response);
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load daily withdrawals');
+                }
+
+                const data = response.data;
+                console.log('📊 Withdrawals Data:', data);
+                const transactions = data.transactions || [];
+                const totalAmount = data.total_amount || 0;
+                console.log('📊 Transactions count:', transactions.length);
+                console.log('📊 Total amount:', totalAmount);
+
+                const summaryCard = document.getElementById('summaryCard');
+                const totalAmountEl = document.getElementById('totalAmount');
+                const summaryDateEl = document.getElementById('summaryDate');
+                
+                if (summaryCard && totalAmountEl && summaryDateEl) {
+                    totalAmountEl.textContent = formatCurrency(Math.abs(totalAmount));
+                    summaryDateEl.textContent = formatDateShort(date);
+                    summaryCard.style.display = 'block';
+                    console.log('📊 Summary card displayed, total:', Math.abs(totalAmount));
+                    
+                    // Setup collapse functionality for mobile
+                    setupSummaryCardCollapse();
+                } else {
+                    console.error('📊 Summary card elements not found:', { summaryCard, totalAmountEl, summaryDateEl });
+                }
+
+                if (transactions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-title">No Withdrawals Found</div>
+                            <div class="empty-state-text">No withdrawals were made on ${formatDateShort(date)}</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let tableHTML = `
+                    <table class="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Agent</th>
+                                <th>Client</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                transactions.forEach(transaction => {
+                    tableHTML += `
+                        <tr>
+                            <td>
+                                <div style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${formatTime(transaction.created_at)}</div>
+                            </td>
+                            <td>
+                                <div class="client-name">${escapeHtml(transaction.agent_name || 'Unknown')}</div>
+                            </td>
+                            <td>
+                                <div class="client-name">${escapeHtml(transaction.client_name || 'Unknown')}</div>
+                                <div class="client-phone">${formatPhone(transaction.client_phone)}</div>
+                            </td>
+                            <td>
+                                <div class="amount">${formatCurrency(Math.abs(transaction.amount))}</div>
+                            </td>
+                            <td>
+                                ${(() => {
+                                    const notes = transaction.notes || '';
+                                    // Check if this is an Unknown receiver transaction (check first to avoid duplicate)
+                                    if (notes.includes('Unknown:')) {
+                                        const unknownMatch = notes.match(/Unknown:\s*([^(]+)(?:\s*\(([^)]+)\))?/);
+                                        if (unknownMatch) {
+                                            const receiverName = unknownMatch[1].trim();
+                                            const receiverContact = unknownMatch[2] ? unknownMatch[2].trim() : null;
+                                            // Extract other notes (everything after the Unknown receiver info)
+                                            const otherNotes = notes.replace(/Payment received by:\s*Unknown:.*?(?:\.\s*|$)/, '').trim();
+                                            return `
+                                                <div style="font-size: 12px;">
+                                                    <div style="color: var(--primary-color); font-weight: 600; margin-bottom: 4px;">
+                                                        🔍 Unknown Receiver
+                                                    </div>
+                                                    <div style="color: var(--text-primary); margin-bottom: 2px;">
+                                                        <strong>Name:</strong> ${escapeHtml(receiverName)}
+                                                    </div>
+                                                    ${receiverContact ? `<div style="color: var(--text-primary); margin-bottom: 4px;"><strong>Contact:</strong> ${escapeHtml(receiverContact)}</div>` : ''}
+                                                    ${otherNotes ? `<div style="color: var(--text-secondary); margin-top: 4px; font-style: italic;">${escapeHtml(otherNotes)}</div>` : ''}
+                                                </div>
+                                            `;
+                                        }
+                                    }
+                                    // Check if it's a payment receiver note (but not Unknown, as that's handled above)
+                                    if (notes.includes('Payment received by:') && !notes.includes('Unknown:')) {
+                                        const receiverMatch = notes.match(/Payment received by:\s*(.+?)(?:\.\s*(.+))?$/);
+                                        if (receiverMatch) {
+                                            const receiverInfo = receiverMatch[1].trim();
+                                            const otherNotes = receiverMatch[2] ? receiverMatch[2].trim() : '';
+                                            return `
+                                                <div style="font-size: 12px;">
+                                                    <div style="color: var(--text-primary); margin-bottom: 4px;">
+                                                        <strong>Payment Received By:</strong> ${escapeHtml(receiverInfo)}
+                                                    </div>
+                                                    ${otherNotes ? `<div style="color: var(--text-secondary); margin-top: 4px; font-style: italic;">${escapeHtml(otherNotes)}</div>` : ''}
+                                                </div>
+                                            `;
+                                        }
+                                    }
+                                    // Default display
+                                    return `<div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(notes || 'No notes')}</div>`;
+                                })()}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+
+                console.log('📊 Setting container HTML, transactions:', transactions.length);
+                container.innerHTML = tableHTML;
+                console.log('📊 Container HTML set, container:', container);
+
+            } catch (error) {
+                console.error('Error loading daily withdrawals:', error);
+                const errorMessage = error?.message || 'Failed to load daily withdrawals. Please try again.';
+                container.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">⚠️</div>
+                        <div class="error-state-title">Error Loading Withdrawals</div>
+                        <div class="error-state-text">${errorMessage}</div>
+                    </div>
+                `;
+                
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(errorMessage, 'Error Loading Withdrawals');
+                }
+            }
+        }
+
+        // Initialize page
+        // Setup summary card collapse functionality for mobile (only setup once)
+        let summaryCardCollapseSetup = false;
+        function setupSummaryCardCollapse() {
+            // Only setup once to avoid duplicate event listeners
+            if (summaryCardCollapseSetup) return;
+            
+            const summaryCard = document.getElementById('summaryCard');
+            const toggleBtn = document.getElementById('summaryCardToggle');
+            
+            if (!summaryCard || !toggleBtn) return;
+            
+            summaryCardCollapseSetup = true;
+            
+            // Use data attribute to track collapsed state
+            let isCollapsed = summaryCard.dataset.collapsed === 'true';
+            
+            // Toggle button click handler
+            toggleBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                isCollapsed = !isCollapsed;
+                summaryCard.dataset.collapsed = isCollapsed;
+                if (isCollapsed) {
+                    summaryCard.classList.add('collapsed');
+                    toggleBtn.textContent = '+';
+                    toggleBtn.setAttribute('aria-label', 'Expand summary card');
+                } else {
+                    summaryCard.classList.remove('collapsed');
+                    toggleBtn.textContent = '−';
+                    toggleBtn.setAttribute('aria-label', 'Collapse summary card');
+                }
+            });
+            
+            // Auto-collapse when dropdowns are opened on mobile
+            function isMobile() {
+                return window.innerWidth <= 768;
+            }
+            
+            // Helper function to collapse the card
+            function collapseCard() {
+                if (!isCollapsed && isMobile()) {
+                    isCollapsed = true;
+                    summaryCard.dataset.collapsed = 'true';
+                    summaryCard.classList.add('collapsed');
+                    toggleBtn.textContent = '+';
+                    toggleBtn.setAttribute('aria-label', 'Expand summary card');
+                }
+            }
+            
+            // Listen for dropdown focus/click events (only add once)
+            document.addEventListener('focusin', function(e) {
+                if (!isMobile()) return;
+                
+                const target = e.target;
+                // Check if it's a select dropdown
+                if (target.tagName === 'SELECT' || 
+                    (target.tagName === 'INPUT' && target.type === 'text' && target.closest('.client-search-container'))) {
+                    collapseCard();
+                }
+            });
+            
+            // Also handle click events for select elements (mobile dropdowns)
+            document.addEventListener('click', function(e) {
+                if (!isMobile()) return;
+                
+                const target = e.target;
+                if (target.tagName === 'SELECT') {
+                    collapseCard();
+                }
+            }, true); // Use capture phase to catch before dropdown opens
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const datePicker = document.getElementById('datePicker');
+            const today = new Date().toISOString().split('T')[0];
+            datePicker.value = today;
+            currentDate = today;
+
+            // Load dropdown data first
+            await loadDropdownData();
+            
+            // Then load withdrawals
+            loadDailyWithdrawals(today);
+
+            // New Withdrawal button - try multiple ways to attach
+            function attachWithdrawalButton() {
+                const newWithdrawalBtn = document.getElementById('newWithdrawalBtn');
+                if (newWithdrawalBtn) {
+                    // Remove any existing listeners
+                    const newBtn = newWithdrawalBtn.cloneNode(true);
+                    newWithdrawalBtn.parentNode.replaceChild(newBtn, newWithdrawalBtn);
+                    
+                    newBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('✅ New Withdrawal button clicked');
+                        console.log('Clients loaded:', allClients.length);
+                        console.log('Agents loaded:', allAgents.length);
+                        
+                        if (allClients.length === 0 || allAgents.length === 0) {
+                            console.warn('⚠️ Clients or agents not loaded yet');
+                            if (typeof Dialog !== 'undefined') {
+                                Dialog.error('Please wait while clients and agents are loaded. If this persists, please refresh the page.', 'Loading');
+                            } else {
+                                alert('Please wait while clients and agents are loaded.');
+                            }
+                            return;
+                        }
+                        console.log('🚀 Opening withdrawal dialog...');
+                        try {
+                            showNewWithdrawalDialog();
+                        } catch (error) {
+                            console.error('❌ Error showing dialog:', error);
+                            alert('Error opening dialog: ' + error.message);
+                        }
+                    });
+                    
+                    console.log('✅ Withdrawal button event listener attached');
+                    return true;
+                } else {
+                    console.error('❌ New Withdrawal button not found!');
+                    return false;
+                }
+            }
+            
+            // Try to attach immediately
+            if (!attachWithdrawalButton()) {
+                // If button not found, try again after a short delay
+                setTimeout(() => {
+                    if (!attachWithdrawalButton()) {
+                        console.error('❌ Failed to attach withdrawal button after retry');
+                    }
+                }, 500);
+            }
+
+            datePicker.addEventListener('change', function() {
+                const selectedDate = this.value;
+                if (selectedDate) {
+                    currentDate = selectedDate;
+                    loadDailyWithdrawals(selectedDate);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

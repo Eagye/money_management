@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Agent - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="api-client.js"></script>
+    <script src="dialog.js"></script>
+    <style>
+        .register-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .register-card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .register-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+        }
+
+        .register-title {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .register-subtitle {
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .form-label .required {
+            color: var(--danger-color);
+            margin-left: 2px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input.invalid {
+            border-color: var(--danger-color);
+        }
+
+        .form-input.valid {
+            border-color: var(--success-color);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 11px;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .form-group.has-error .error-message {
+            display: block;
+        }
+
+        .form-hint {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .login-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .form-section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '📋';
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <h1 class="register-title">Create Agent Account</h1>
+            <p class="register-subtitle">Register to access the Lucky Susu Ent system</p>
+            
+            <form id="registerForm" autocomplete="off">
+                <!-- Agent Information Section -->
+                <div class="form-section">
+                    <div class="section-title">Agent Information</div>
+                    
+                    <div class="form-group">
+                        <label for="name" class="form-label">
+                            Full Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="name" class="form-input" placeholder="Enter your full name" autocomplete="off" required>
+                        <span class="error-message" id="nameError"></span>
+                        <div class="form-hint">This name will be displayed in the system</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            Email Address <span class="required">*</span>
+                        </label>
+                        <input type="email" id="email" class="form-input" placeholder="agent@example.com" autocomplete="off" required>
+                        <span class="error-message" id="emailError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            Password <span class="required">*</span>
+                        </label>
+                        <input type="password" id="password" class="form-input" placeholder="Create a strong password" autocomplete="new-password" required minlength="6">
+                        <span class="error-message" id="passwordError"></span>
+                        <div class="form-hint">Password must be at least 6 characters long</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword" class="form-label">
+                            Confirm Password <span class="required">*</span>
+                        </label>
+                        <input type="password" id="confirmPassword" class="form-input" placeholder="Re-enter your password" autocomplete="new-password" required>
+                        <span class="error-message" id="confirmPasswordError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact" class="form-label">
+                            Contact Number <span class="required">*</span>
+                        </label>
+                        <input type="tel" id="contact" class="form-input" placeholder="024 123 4567" autocomplete="off" required maxlength="15">
+                        <span class="error-message" id="contactError"></span>
+                        <div class="form-hint">Enter your 10-digit phone number</div>
+                    </div>
+                </div>
+
+                <!-- Validation Information Section -->
+                <div class="form-section">
+                    <div class="section-title">Validation Information</div>
+                    
+                    <div class="form-group">
+                        <label for="validationCardNumber" class="form-label">
+                            GH-Card Number <span class="required">*</span>
+                        </label>
+                        <input type="text" id="validationCardNumber" class="form-input" placeholder="GHA-123456789-1" autocomplete="off" required pattern="^[Gg][Hh][Aa]-\d{9}-\d$" title="Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-1)">
+                        <span class="error-message" id="validationCardError"></span>
+                        <div class="form-hint">Enter your Ghana Card number (Format: GHA-XXXXXXXXX-X)</div>
+                    </div>
+                </div>
+
+                <!-- Guarantor Information Section -->
+                <div class="form-section">
+                    <div class="section-title">Guarantor Information</div>
+                    
+                    <div class="form-group">
+                        <label for="guarantorNumber" class="form-label">
+                            Guarantor Contact Number <span class="required">*</span>
+                        </label>
+                        <input type="tel" id="guarantorNumber" class="form-input" placeholder="024 123 4567" autocomplete="off" required maxlength="15">
+                        <span class="error-message" id="guarantorNumberError"></span>
+                        <div class="form-hint">Enter guarantor's 10-digit phone number</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="guarantorValidationNumber" class="form-label">
+                            Guarantor GH-Card Number <span class="required">*</span>
+                        </label>
+                        <input type="text" id="guarantorValidationNumber" class="form-input" placeholder="GHA-123456789-1" autocomplete="off" required pattern="^[Gg][Hh][Aa]-\d{9}-\d$" title="Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-1)">
+                        <span class="error-message" id="guarantorValidationError"></span>
+                        <div class="form-hint">Enter guarantor's Ghana Card number (Format: GHA-XXXXXXXXX-X)</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary register-btn" id="submitBtn">Create Account</button>
+            </form>
+
+            <div class="login-link">
+                Already have an account? <a href="index.html">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Clear form on page load
+        window.addEventListener('load', function() {
+            const form = document.getElementById('registerForm');
+            if (form) {
+                form.reset();
+            }
+        });
+
+        const form = document.getElementById('registerForm');
+        const inputs = form.querySelectorAll('input[required]');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Format phone number - deletion-friendly version
+        function formatPhoneNumber(input) {
+            // Get current cursor position
+            const cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            
+            // Remove all non-digits
+            let digits = input.value.replace(/\D/g, '');
+            
+            // Limit to 10 digits
+            if (digits.length > 10) {
+                digits = digits.substring(0, 10);
+            }
+            
+            // Format with spaces: XXX XXX XXXX
+            let formattedValue = '';
+            if (digits.length === 0) {
+                formattedValue = '';
+            } else if (digits.length <= 3) {
+                formattedValue = digits;
+            } else if (digits.length <= 6) {
+                formattedValue = digits.substring(0, 3) + ' ' + digits.substring(3);
+            } else {
+                formattedValue = digits.substring(0, 3) + ' ' + digits.substring(3, 6) + ' ' + digits.substring(6);
+            }
+            
+            // Only update if the formatted value is different
+            if (formattedValue !== oldValue) {
+                input.value = formattedValue;
+                
+                // Calculate new cursor position
+                // Count digits before cursor in old value
+                const digitsBeforeCursor = oldValue.substring(0, cursorPosition).replace(/\D/g, '').length;
+                
+                // Find position in new formatted value that corresponds to same digit position
+                let newCursorPosition = 0;
+                let digitCount = 0;
+                
+                for (let i = 0; i <= formattedValue.length; i++) {
+                    if (i === formattedValue.length) {
+                        newCursorPosition = i;
+                        break;
+                    }
+                    if (/\d/.test(formattedValue[i])) {
+                        digitCount++;
+                        if (digitCount >= digitsBeforeCursor) {
+                            newCursorPosition = i + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                // Ensure cursor position is within bounds
+                newCursorPosition = Math.max(0, Math.min(newCursorPosition, formattedValue.length));
+                
+                // Set cursor position
+                setTimeout(() => {
+                    input.setSelectionRange(newCursorPosition, newCursorPosition);
+                }, 0);
+            }
+        }
+
+        // Validate email
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Validate phone number (10 digits)
+        function validatePhone(phone) {
+            const digits = phone.replace(/\D/g, '');
+            return digits.length === 10;
+        }
+
+        // Validate Ghana Card number format: GHA-XXXXXXXXX-X
+        // Format: 3 letters (GHA), hyphen, 9 digits, hyphen, 1 check digit
+        function validateGhanaCard(cardNumber) {
+            if (!cardNumber || !cardNumber.trim()) {
+                return false;
+            }
+            // Remove spaces and convert to uppercase for validation
+            const cleaned = cardNumber.trim().toUpperCase();
+            // Pattern: GHA-XXXXXXXXX-X (GHA- followed by 9 digits, hyphen, 1 digit)
+            const ghanaCardRegex = /^GHA-\d{9}-\d$/;
+            return ghanaCardRegex.test(cleaned);
+        }
+
+        // Validate field
+        function validateField(input) {
+            const formGroup = input.closest('.form-group');
+            const errorElement = formGroup.querySelector('.error-message');
+            let isValid = true;
+            let errorMessage = '';
+
+            input.classList.remove('invalid', 'valid');
+
+            if (input.required && !input.value.trim()) {
+                isValid = false;
+                errorMessage = 'This field is required';
+            } else if (input.id === 'name' && input.value && input.value.trim().length < 2) {
+                isValid = false;
+                errorMessage = 'Name must be at least 2 characters long';
+            } else if (input.type === 'email' && input.value && !validateEmail(input.value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid email address';
+            } else if (input.id === 'password' && input.value && input.value.length < 6) {
+                isValid = false;
+                errorMessage = 'Password must be at least 6 characters long';
+            } else if (input.id === 'confirmPassword' && input.value) {
+                const password = document.getElementById('password').value;
+                if (input.value !== password) {
+                    isValid = false;
+                    errorMessage = 'Passwords do not match';
+                }
+            } else if ((input.id === 'contact' || input.id === 'guarantorNumber') && input.value) {
+                if (!validatePhone(input.value)) {
+                    isValid = false;
+                    errorMessage = 'Phone number must contain exactly 10 digits';
+                }
+            } else if ((input.id === 'validationCardNumber' || input.id === 'guarantorValidationNumber') && input.value) {
+                if (!validateGhanaCard(input.value)) {
+                    isValid = false;
+                    errorMessage = 'Ghana Card number must be in format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-1)';
+                }
+            }
+
+            if (isValid) {
+                input.classList.add('valid');
+                formGroup.classList.remove('has-error');
+                if (errorElement) errorElement.textContent = '';
+            } else {
+                input.classList.add('invalid');
+                formGroup.classList.add('has-error');
+                if (errorElement) errorElement.textContent = errorMessage;
+            }
+
+            return isValid;
+        }
+
+        // Phone number formatting - simplified and deletion-friendly
+        const phoneInputs = document.querySelectorAll('#contact, #guarantorNumber');
+        phoneInputs.forEach(input => {
+            // Handle input events - format as user types
+            input.addEventListener('input', function(e) {
+                // Format the phone number
+                formatPhoneNumber(this);
+                // Validate after formatting
+                validateField(this);
+            });
+            
+            // Handle keydown for backspace/delete - don't interfere
+            input.addEventListener('keydown', function(e) {
+                // Allow backspace, delete, arrow keys, and other navigation keys to work normally
+                if (e.key === 'Backspace' || e.key === 'Delete' || 
+                    e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+                    e.key === 'Home' || e.key === 'End') {
+                    // Don't prevent default - let the browser handle it naturally
+                    return;
+                }
+                
+                // Allow Ctrl/Cmd + A, C, V, X
+                if ((e.ctrlKey || e.metaKey) && 
+                    (e.key === 'a' || e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+                    return;
+                }
+                
+                // For other keys, allow them but they'll be formatted in the input event
+            });
+            
+            // Handle paste events
+            input.addEventListener('paste', function(e) {
+                // Allow paste to complete first
+                setTimeout(() => {
+                    formatPhoneNumber(this);
+                    validateField(this);
+                }, 0);
+            });
+            
+            // Handle focus - ensure proper formatting when field is focused
+            input.addEventListener('focus', function() {
+                // Re-format on focus to ensure consistency
+                formatPhoneNumber(this);
+            });
+        });
+
+        // Real-time validation
+        inputs.forEach(input => {
+            input.addEventListener('blur', () => validateField(input));
+            input.addEventListener('input', () => {
+                if (input.classList.contains('invalid')) {
+                    validateField(input);
+                }
+            });
+        });
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            let isFormValid = true;
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isFormValid = false;
+                }
+            });
+
+            // Special validation for password match
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            if (password !== confirmPassword) {
+                validateField(document.getElementById('confirmPassword'));
+                isFormValid = false;
+            }
+
+            if (!isFormValid) {
+                const firstError = form.querySelector('.invalid, [required]:not(:valid)');
+                if (firstError) {
+                    firstError.focus();
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+            submitBtn.style.opacity = '0.7';
+
+            try {
+                // Extract digits from phone numbers
+                const contactDigits = document.getElementById('contact').value.replace(/\D/g, '');
+                const guarantorDigits = document.getElementById('guarantorNumber').value.replace(/\D/g, '');
+
+                // Normalize Ghana Card numbers to uppercase
+                const validationCardNumber = document.getElementById('validationCardNumber').value.trim().toUpperCase();
+                const guarantorValidationNumber = document.getElementById('guarantorValidationNumber').value.trim().toUpperCase();
+
+                const formData = {
+                    name: document.getElementById('name').value.trim(),
+                    email: document.getElementById('email').value.trim().toLowerCase(),
+                    password: document.getElementById('password').value,
+                    contact: contactDigits,
+                    validation_card_number: validationCardNumber,
+                    guarantor_number: guarantorDigits,
+                    guarantor_validation_number: guarantorValidationNumber
+                };
+
+                // Check if UserAPI exists, otherwise use fetch directly
+                console.log('UserAPI available:', typeof UserAPI !== 'undefined');
+                console.log('Form data:', formData);
+                
+                let response;
+                if (typeof UserAPI !== 'undefined' && UserAPI.register) {
+                    console.log('Using UserAPI.register');
+                    response = await UserAPI.register(formData);
+                } else {
+                    // Fallback: use fetch directly
+                    console.log('Using fetch directly to:', 'http://localhost:3000/api/auth/register');
+                    const fetchResponse = await fetch('http://localhost:3000/api/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    response = await fetchResponse.json();
+                }
+                
+                console.log('Registration response:', response);
+                
+                if (response && response.success) {
+                    // Clear form
+                    form.reset();
+                    // Clear all validation states
+                    inputs.forEach(input => {
+                        input.classList.remove('invalid', 'valid');
+                        const formGroup = input.closest('.form-group');
+                        if (formGroup) {
+                            formGroup.classList.remove('has-error');
+                        }
+                    });
+                    
+                    // Don't store token - user needs approval first
+                    // They will get a token after approval when they login
+                    
+                    const message = response.data?.message || 'Account created successfully! Your account is pending approval. You will be able to access the system once an administrator approves your account.';
+                    Dialog.success(message + ' Redirecting to login...', 'Registration Successful');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    throw new Error(response?.error || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                console.error('Error details:', error.response, error.message);
+                
+                // Try to get more detailed error message
+                let errorMsg = 'An error occurred while creating your account. Please try again.';
+                if (error.message) {
+                    errorMsg = error.message;
+                } else if (response && response.error) {
+                    errorMsg = response.error;
+                }
+                
+                Dialog.error(errorMsg, 'Registration Failed');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+            }
+        });
+    </script>
+</body>
+</html>
+

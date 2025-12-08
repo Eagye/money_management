@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">Lucky Susu Ent</h1>
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label for="username" class="form-label">Email</label>
+                    <input type="email" id="username" class="form-input" placeholder="Enter email" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Enter password" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary login-btn">Login</button>
+            </form>
+            <div class="login-link" style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
+                Don't have an account? <a href="register_agent.html" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script src="dialog.js"></script>
+    <script>
+        // Clear form on page load
+        window.addEventListener('load', function() {
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.reset();
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+
+            if (!email || !password) {
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error('Please enter both email and password', 'Login Required');
+                } else {
+                    alert('Please enter both email and password');
+                }
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+            submitBtn.style.opacity = '0.7';
+
+            try {
+                const response = await UserAPI.login({ email, password });
+                
+                if (response.success) {
+                    // Store user info and token in localStorage
+                    if (typeof setToken !== 'undefined') {
+                        setToken(response.data.token, {
+                            id: response.data.id,
+                            name: response.data.name,
+                            email: response.data.email,
+                            contact: response.data.contact
+                        });
+                    } else {
+                        localStorage.setItem('user', JSON.stringify(response.data));
+                    }
+                    
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.success('Login successful! Redirecting...', 'Welcome');
+                    }
+                    
+                    // Clear form
+                    document.getElementById('loginForm').reset();
+                    
+                    // Check if user is admin and redirect accordingly
+                    // Use isAdmin flag from server response (which checks against ADMIN_EMAIL env variable)
+                    const isAdmin = response.data.isAdmin || false;
+                    
+                    setTimeout(() => {
+                        if (isAdmin) {
+                            window.location.href = '/admin/dashboard.html';
+                        } else {
+                            window.location.href = 'registered_clients.html';
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const errorMsg = error.message || 'Invalid email or password. Please try again.';
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(errorMsg, 'Login Failed');
+                } else {
+                    alert(errorMsg);
+                }
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+            }
+        });
+    </script>
+</body>
+</html>
+

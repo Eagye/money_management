@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Largest Accounts by Agent - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .ultimate-largest-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(37, 99, 235, 0.08));
+            color: var(--text-primary);
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+            margin-bottom: 24px;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+        .ultimate-largest-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+        }
+        .ultimate-largest-label::before {
+            content: '🏆';
+            font-size: 14px;
+        }
+        .ultimate-largest-amount {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            color: var(--primary-color);
+        }
+        .ultimate-largest-attribution {
+            font-size: 12px;
+            opacity: 0.7;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .accounts-container {
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        .accounts-header {
+            background: rgba(248, 250, 252, 0.6);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accounts-header h2 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .accounts-header h2::before {
+            content: '💼';
+            font-size: 16px;
+        }
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .refresh-btn:hover {
+            background: rgba(37, 99, 235, 0.12);
+            border-color: rgba(37, 99, 235, 0.25);
+            transform: translateY(-1px);
+        }
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        .refresh-btn.refreshing .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .refresh-icon {
+            font-size: 14px;
+            display: inline-block;
+        }
+        .refresh-text {
+            font-size: 12px;
+        }
+        .accounts-list {
+            max-height: 650px;
+            overflow-y: auto;
+        }
+        .account-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .account-row:last-child {
+            border-bottom: none;
+        }
+        .account-row::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: rgba(37, 99, 235, 0.3);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .account-row:nth-child(even) {
+            background: rgba(248, 250, 252, 0.3);
+        }
+        .account-row:hover {
+            background: rgba(248, 250, 252, 0.6);
+            transform: translateX(2px);
+        }
+        .account-row:hover::before {
+            opacity: 1;
+        }
+        .account-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .account-agent-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .account-rank {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+        .account-rank.top-1 {
+            background: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+        .account-rank.top-2 {
+            background: rgba(148, 163, 184, 0.1);
+            color: #64748b;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+        .account-rank.top-3 {
+            background: rgba(205, 127, 50, 0.1);
+            color: #a0522d;
+            border-color: rgba(205, 127, 50, 0.3);
+        }
+        .account-agent {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+        }
+        .account-client-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-left: 36px;
+        }
+        .account-client-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(241, 245, 249, 0.6);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+        .account-client-detail strong {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .account-client-detail span {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .account-balance-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 3px;
+            min-width: 140px;
+        }
+        .account-balance {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+            letter-spacing: -0.5px;
+            text-align: right;
+        }
+        .account-balance-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.6;
+        }
+        .accounts-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .accounts-list::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.3);
+        }
+        .accounts-list::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+        }
+        .accounts-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        .no-accounts {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+            background: var(--surface);
+            border-radius: 16px;
+            border: 2px dashed var(--border-color);
+        }
+        .no-accounts-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            opacity: 0.4;
+        }
+        .no-accounts h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        .no-accounts p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        @media (max-width: 768px) {
+            .account-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .account-balance-section {
+                align-items: flex-start;
+                min-width: auto;
+            }
+            .account-client-section {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; display: inline-block;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Largest Accounts by Agent</h1>
+                    <p class="page-subtitle">View the client with the largest account balance for each agent</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Ultimate Largest Account Card -->
+            <div id="ultimateLargestCard" class="ultimate-largest-card" style="display: none;">
+                <div class="ultimate-largest-label">Ultimate Largest Account</div>
+                <div class="ultimate-largest-amount" id="ultimateLargestAmount">₵0.00</div>
+                <div class="ultimate-largest-attribution" id="ultimateLargestAttribution">--</div>
+            </div>
+
+            <!-- Accounts List -->
+            <div id="accountsContainer" class="accounts-container">
+                <div class="accounts-header">
+                    <h2>Largest Account per Agent</h2>
+                    <button id="refreshBtn" class="refresh-btn" title="Refresh data">
+                        <span class="refresh-icon">🔄</span>
+                        <span class="refresh-text">Refresh</span>
+                    </button>
+                </div>
+                <div id="accountsList" class="accounts-list">
+                    <div class="loading-state" style="padding: 40px; text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading accounts...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="noAccountsMessage" class="no-accounts" style="display: none;">
+                <div class="no-accounts-icon">💰</div>
+                <h3>No Accounts Found</h3>
+                <p>No clients have been registered yet.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date for display
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        // Auto-refresh interval (30 seconds)
+        let refreshInterval = null;
+        const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+
+        // Load largest accounts
+        async function loadLargestAccounts(showLoading = true) {
+            const accountsContainer = document.getElementById('accountsContainer');
+            const accountsList = document.getElementById('accountsList');
+            const noAccountsMessage = document.getElementById('noAccountsMessage');
+            const ultimateLargestCard = document.getElementById('ultimateLargestCard');
+            const ultimateLargestAmount = document.getElementById('ultimateLargestAmount');
+            const ultimateLargestAttribution = document.getElementById('ultimateLargestAttribution');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            if (showLoading) {
+                accountsContainer.style.display = 'block';
+                noAccountsMessage.style.display = 'none';
+                accountsList.innerHTML = '<div class="loading-state" style="padding: 40px; text-align: center;"><div class="loading-spinner"></div><div>Loading accounts...</div></div>';
+            }
+            
+            // Show refreshing state
+            if (refreshBtn) {
+                refreshBtn.classList.add('refreshing');
+            }
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getLargestAccountsByAgent();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load accounts');
+                }
+
+                const accounts = response.data || [];
+
+                if (accounts.length === 0) {
+                    accountsContainer.style.display = 'none';
+                    noAccountsMessage.style.display = 'block';
+                    return;
+                }
+
+                // Find ultimate largest account
+                const ultimate = accounts.reduce((max, account) => {
+                    return parseFloat(account.current_balance) > parseFloat(max.current_balance) ? account : max;
+                }, accounts[0]);
+
+                if (ultimate) {
+                    ultimateLargestCard.style.display = 'block';
+                    ultimateLargestAmount.textContent = formatCurrency(ultimate.current_balance);
+                    ultimateLargestAttribution.textContent = `${ultimate.name || 'Unknown Client'} · ${ultimate.agent_name || 'Unknown Agent'}`;
+                } else {
+                    ultimateLargestCard.style.display = 'none';
+                }
+
+                // Display accounts with ranking
+                accountsList.innerHTML = accounts.map((account, index) => {
+                    const rank = index + 1;
+                    let rankClass = '';
+                    if (rank === 1) rankClass = 'top-1';
+                    else if (rank === 2) rankClass = 'top-2';
+                    else if (rank === 3) rankClass = 'top-3';
+                    
+                    return `
+                        <div class="account-row">
+                            <div class="account-info">
+                                <div class="account-agent-section">
+                                    <div class="account-rank ${rankClass}">${rank}</div>
+                                    <div class="account-agent">${account.agent_name || 'Unknown Agent'}</div>
+                                </div>
+                                <div class="account-client-section">
+                                    <div class="account-client-detail">
+                                        <strong>Client</strong>
+                                        <span>${account.name || 'Unknown'}</span>
+                                    </div>
+                                    <div class="account-client-detail">
+                                        <strong>Phone</strong>
+                                        <span>${account.phone || 'N/A'}</span>
+                                    </div>
+                                    <div class="account-client-detail">
+                                        <strong>Rate</strong>
+                                        <span>${formatCurrency(account.rate || 0)}</span>
+                                    </div>
+                                    <div class="account-client-detail">
+                                        <strong>Registered</strong>
+                                        <span>${formatDateDisplay(account.created_at)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="account-balance-section">
+                                <div class="account-balance">${formatCurrency(account.current_balance || 0)}</div>
+                                <div class="account-balance-label">Account Balance</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+                accountsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Accounts</div>
+                        <div>${error.message || 'Failed to load accounts. Please try again.'}</div>
+                    </div>
+                `;
+            } finally {
+                // Remove refreshing state
+                if (refreshBtn) {
+                    refreshBtn.classList.remove('refreshing');
+                }
+            }
+        }
+
+        // Setup auto-refresh
+        function setupAutoRefresh() {
+            // Clear any existing interval
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            // Set up new interval to refresh every 30 seconds
+            refreshInterval = setInterval(() => {
+                loadLargestAccounts(false); // Don't show loading spinner on auto-refresh
+            }, REFRESH_INTERVAL_MS);
+        }
+
+        // Refresh when page gains focus
+        function handleVisibilityChange() {
+            if (!document.hidden) {
+                loadLargestAccounts(false);
+            }
+        }
+
+        // Initialize page
+        function initializePage() {
+            loadLargestAccounts();
+            setupAutoRefresh();
+            
+            // Setup refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => {
+                    loadLargestAccounts(true);
+                });
+            }
+            
+            // Refresh when page becomes visible
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            
+            // Refresh when window gains focus
+            window.addEventListener('focus', () => {
+                loadLargestAccounts(false);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Agents - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <div class="admin-name-display" id="adminNameDisplay" style="padding: 12px 16px; color: var(--text-secondary); font-size: 13px; font-weight: 600; border-top: 1px solid var(--border-color); margin-top: 8px;">
+                <span id="adminName">Loading...</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
+                        <span style="font-size: 16px; display: inline-block; transform: translateX(0); transition: transform 0.3s ease;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">All Registered Agents<span id="adminNameHeader" style="color: var(--primary-color); font-weight: 700; margin-left: 8px;"></span></h1>
+                    <p class="page-subtitle">View and manage all agents registered on the system</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block; transition: transform 0.3s ease;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Agents Container -->
+            <div id="agentsContainer">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <div>Loading agents...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script src="/dialog.js"></script>
+    <script src="/admin/view-agent-dialog.js"></script>
+    <script>
+        // Load and display admin name
+        function loadAdminName() {
+            try {
+                const userData = localStorage.getItem('user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    const adminName = user.name || 'Admin';
+                    
+                    // Update sidebar admin name
+                    const adminNameElement = document.getElementById('adminName');
+                    if (adminNameElement) {
+                        adminNameElement.textContent = adminName;
+                    }
+                    
+                    // Update header admin name
+                    const adminNameHeader = document.getElementById('adminNameHeader');
+                    if (adminNameHeader) {
+                        adminNameHeader.textContent = user.name ? ` · ${user.name}` : '';
+                    }
+                } else {
+                    const adminNameElement = document.getElementById('adminName');
+                    if (adminNameElement) {
+                        adminNameElement.textContent = 'Admin';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading admin name:', error);
+                const adminNameElement = document.getElementById('adminName');
+                if (adminNameElement) {
+                    adminNameElement.textContent = 'Admin';
+                }
+            }
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Function to show agent dialog
+        async function showAgentDialog(agent) {
+            console.log('showAgentDialog called with:', agent);
+            
+            // Check if ViewAgentDialog is available
+            if (typeof ViewAgentDialog === 'undefined') {
+                console.error('ViewAgentDialog is not defined');
+                console.log('Available globals:', Object.keys(window).filter(k => k.includes('Dialog') || k.includes('Agent')));
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error('Dialog component not loaded. Please refresh the page.', 'Error');
+                } else {
+                    alert('Dialog component not loaded. Please refresh the page.');
+                }
+                return;
+            }
+            
+            console.log('ViewAgentDialog is available, calling show...');
+            try {
+                await ViewAgentDialog.show(agent);
+                console.log('ViewAgentDialog.show completed');
+            } catch (error) {
+                console.error('Error in ViewAgentDialog.show:', error);
+                throw error;
+            }
+        }
+
+        // Load and display agents
+        async function loadAgents() {
+            const container = document.getElementById('agentsContainer');
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <div>Loading agents...</div>
+                </div>
+            `;
+
+            try {
+                // Check if AdminAPI is available
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getAgents();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load agents');
+                }
+
+                const agents = response.data || [];
+
+                if (agents.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div class="empty-state-title">No Agents Found</div>
+                            <div class="empty-state-text">No agents have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Store agents array globally for click handlers
+                window.agentsData = agents;
+                
+                // Separate agents by approval status
+                // Pending agents: not admin, not approved, and not rejected
+                const pendingAgents = agents.filter(a => !a.is_admin && !a.is_approved && !a.is_rejected);
+                const approvedAgents = agents.filter(a => !a.is_admin && a.is_approved);
+                const adminUsers = agents.filter(a => a.is_admin);
+                
+                let html = '';
+                
+                // Pending agents section
+                if (pendingAgents.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 32px;">
+                            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <span style="background: var(--warning-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${pendingAgents.length}</span>
+                                Pending Approval
+                            </h2>
+                            <div class="agents-grid">
+                                ${pendingAgents.map(agent => `
+                                    <div class="agent-card" data-agent-id="${agent.id}" style="border-left: 4px solid var(--warning-color);">
+                                        <div class="agent-name">
+                                            <a href="#" class="agent-name-link" data-agent-id="${agent.id}" style="color: var(--primary-color); text-decoration: none; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.textDecoration='underline'; this.style.color='var(--primary-color)'" onmouseout="this.style.textDecoration='none'; this.style.color='var(--primary-color)'">${agent.name || 'Unknown'}</a>
+                                            <span style="background: var(--warning-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">Pending</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Email:</span>
+                                            <span class="agent-detail-value">${agent.email || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Contact:</span>
+                                            <span class="agent-detail-value">${agent.contact || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Registered:</span>
+                                            <span class="agent-detail-value">${formatDate(agent.created_at)}</span>
+                                        </div>
+                                        <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                            <button class="btn btn-success" style="flex: 1; padding: 8px 12px; font-size: 13px;" onclick="approveAgent(${agent.id}, '${agent.name}')">Approve</button>
+                                            <button class="btn btn-danger" style="flex: 1; padding: 8px 12px; font-size: 13px;" onclick="rejectAgent(${agent.id}, '${agent.name}')">Reject</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Approved agents section
+                if (approvedAgents.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 32px;">
+                            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <span style="background: var(--success-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${approvedAgents.length}</span>
+                                Approved Agents
+                            </h2>
+                            <div class="agents-grid">
+                                ${approvedAgents.map(agent => `
+                                    <div class="agent-card" style="border-left: 4px solid var(--success-color);">
+                                        <div class="agent-name">
+                                            <a href="#" class="agent-name-link" data-agent-id="${agent.id}" style="color: var(--primary-color); text-decoration: none; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.textDecoration='underline'; this.style.color='var(--primary-color)'" onmouseout="this.style.textDecoration='none'; this.style.color='var(--primary-color)'">${agent.name || 'Unknown'}</a>
+                                            <span style="background: var(--success-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">Approved</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Email:</span>
+                                            <span class="agent-detail-value">${agent.email || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Contact:</span>
+                                            <span class="agent-detail-value">${agent.contact || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Registered:</span>
+                                            <span class="agent-detail-value">${formatDate(agent.created_at)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Admin users section
+                if (adminUsers.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 32px;">
+                            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <span style="background: var(--primary-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${adminUsers.length}</span>
+                                Administrators
+                            </h2>
+                            <div class="agents-grid">
+                                ${adminUsers.map(agent => `
+                                    <div class="agent-card" style="border-left: 4px solid var(--primary-color);">
+                                        <div class="agent-name">
+                                            <a href="#" class="agent-name-link" data-agent-id="${agent.id}" style="color: var(--primary-color); text-decoration: none; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.textDecoration='underline'; this.style.color='var(--primary-color)'" onmouseout="this.style.textDecoration='none'; this.style.color='var(--primary-color)'">${agent.name || 'Unknown'}</a>
+                                            <span style="background: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">Admin</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Email:</span>
+                                            <span class="agent-detail-value">${agent.email || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Contact:</span>
+                                            <span class="agent-detail-value">${agent.contact || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Registered:</span>
+                                            <span class="agent-detail-value">${formatDate(agent.created_at)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (html === '') {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div class="empty-state-title">No Agents Found</div>
+                            <div class="empty-state-text">No agents have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = html;
+
+                // Add click handlers to agent name links
+                setTimeout(() => {
+                    const agentLinks = container.querySelectorAll('.agent-name-link');
+                    console.log(`Found ${agentLinks.length} agent links, attaching handlers...`);
+                    
+                    agentLinks.forEach((link, index) => {
+                        link.addEventListener('click', async function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Agent name clicked, index:', index);
+                            
+                            try {
+                                // Get agent ID and find agent from stored array
+                                const agentId = parseInt(this.getAttribute('data-agent-id'));
+                                console.log('Looking for agent with ID:', agentId);
+                                
+                                const agent = window.agentsData?.find(a => a.id === agentId);
+                                if (!agent) {
+                                    console.error('Agent not found with ID:', agentId);
+                                    console.log('Available agents:', window.agentsData);
+                                    if (typeof Dialog !== 'undefined') {
+                                        Dialog.error('Agent information not found', 'Error');
+                                    } else {
+                                        alert('Agent information not found');
+                                    }
+                                    return;
+                                }
+                                
+                                console.log('Found agent:', agent);
+                                
+                                // Use helper function which handles ViewAgentDialog check
+                                console.log('Calling showAgentDialog with agent:', agent);
+                                await showAgentDialog(agent);
+                                console.log('showAgentDialog completed');
+                            } catch (error) {
+                                console.error('Error showing agent dialog:', error);
+                                console.error('Error stack:', error.stack);
+                                if (typeof Dialog !== 'undefined') {
+                                    Dialog.error('Failed to show agent details: ' + error.message, 'Error');
+                                } else {
+                                    alert('Failed to show agent details: ' + error.message);
+                                }
+                            }
+                        });
+                    });
+                    
+                    console.log(`Attached click handlers to ${agentLinks.length} agent links`);
+                }, 100);
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                container.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">⚠️</div>
+                        <div class="error-state-title">Error Loading Agents</div>
+                        <div class="error-state-text">${error.message || 'Failed to load agents. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Approve an agent
+        async function approveAgent(agentId, agentName) {
+            if (typeof Dialog === 'undefined') {
+                if (!confirm(`Are you sure you want to approve ${agentName}? They will be able to access the agent dashboard.`)) {
+                    return;
+                }
+            } else {
+                // Use Dialog.confirm for consistency with system standard
+                Dialog.confirm(
+                    `Are you sure you want to approve ${agentName}? They will be able to access the agent dashboard.`,
+                    'Approve Agent',
+                    async () => {
+                        // User confirmed, proceed with approval
+                        await performApprove(agentId, agentName);
+                    },
+                    () => {
+                        // User cancelled, do nothing
+                    }
+                );
+                return;
+            }
+            
+            // Fallback if Dialog is not available
+            await performApprove(agentId, agentName);
+        }
+        
+        // Perform the actual approval
+        async function performApprove(agentId, agentName) {
+            try {
+                const response = await fetch(`/api/admin/agents/${agentId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`
+                    },
+                    body: JSON.stringify({ action: 'approve' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.success('Agent has been approved successfully.', 'Success');
+                    } else {
+                        alert(`${agentName} has been approved successfully.`);
+                    }
+                    // Reload agents list
+                    loadAgents();
+                } else {
+                    throw new Error(result.error || 'Failed to approve agent');
+                }
+            } catch (error) {
+                console.error('Error approving agent:', error);
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(error.message || 'Failed to approve agent. Please try again.', 'Error');
+                } else {
+                    alert('Failed to approve agent: ' + error.message);
+                }
+            }
+        }
+        
+        // Reject an agent
+        async function rejectAgent(agentId, agentName) {
+            if (typeof Dialog === 'undefined') {
+                if (!confirm(`Are you sure you want to reject ${agentName}? They will not be able to access the system.`)) {
+                    return;
+                }
+            } else {
+                // Use Dialog.confirm for consistency with system standard
+                Dialog.confirm(
+                    `Are you sure you want to reject ${agentName}? They will not be able to access the system.`,
+                    'Reject Agent',
+                    async () => {
+                        // User confirmed, proceed with rejection
+                        await performReject(agentId, agentName);
+                    },
+                    () => {
+                        // User cancelled, do nothing
+                    }
+                );
+                return;
+            }
+            
+            // Fallback if Dialog is not available
+            await performReject(agentId, agentName);
+        }
+        
+        // Perform the actual rejection
+        async function performReject(agentId, agentName) {
+            try {
+                const response = await fetch(`/api/admin/agents/${agentId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`
+                    },
+                    body: JSON.stringify({ action: 'reject' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Remove the agent card from the page immediately
+                    const container = document.getElementById('agentsContainer');
+                    const agentCard = container.querySelector(`.agent-card[data-agent-id="${agentId}"]`);
+                    
+                    if (agentCard) {
+                        const agentsGrid = agentCard.parentElement;
+                        const pendingSectionContainer = agentsGrid?.closest('div[style*="margin-bottom: 32px"]');
+                        
+                        // Remove the agent card
+                        agentCard.remove();
+                        
+                        // Update pending count badge
+                        if (pendingSectionContainer) {
+                            const pendingSection = pendingSectionContainer.querySelector('h2');
+                            if (pendingSection) {
+                                const badge = pendingSection.querySelector('span');
+                                if (badge) {
+                                    const currentCount = parseInt(badge.textContent) || 0;
+                                    const newCount = Math.max(0, currentCount - 1);
+                                    
+                                    if (newCount === 0) {
+                                        // Remove the entire pending section if no pending agents remain
+                                        pendingSectionContainer.remove();
+                                    } else {
+                                        badge.textContent = newCount;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (typeof Dialog !== 'undefined') {
+                        Dialog.success('Agent has been rejected successfully.', 'Success');
+                    } else {
+                        alert(`${agentName} has been rejected successfully.`);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to reject agent');
+                }
+            } catch (error) {
+                console.error('Error rejecting agent:', error);
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(error.message || 'Failed to reject agent. Please try again.', 'Error');
+                } else {
+                    alert('Failed to reject agent: ' + error.message);
+                }
+            }
+        }
+        
+        // Make functions globally available
+        window.approveAgent = approveAgent;
+        window.rejectAgent = rejectAgent;
+        
+        // Initialize page
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                loadAdminName();
+                loadAgents();
+            });
+        } else {
+            loadAdminName();
+            loadAgents();
+        }
+    </script>
+</body>
+</html>
+

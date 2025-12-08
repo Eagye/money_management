@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Number Deletion Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .instructions {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phone Number Deletion Test</h1>
+    
+    <div class="instructions">
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>Type a phone number (e.g., 0241234567)</li>
+            <li>Try to delete numbers using backspace</li>
+            <li>Try to delete numbers in the middle</li>
+            <li>Try to clear the entire field</li>
+            <li>Verify the formatting still works (spaces added automatically)</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <label for="contact">Contact Number (Test 1):</label>
+        <input type="tel" id="contact" placeholder="024 123 4567" maxlength="15">
+        <div class="test-result" id="contactResult">Type a number to test...</div>
+    </div>
+
+    <div class="test-section">
+        <label for="guarantorNumber">Guarantor Contact Number (Test 2):</label>
+        <input type="tel" id="guarantorNumber" placeholder="024 123 4567" maxlength="15">
+        <div class="test-result" id="guarantorResult">Type a number to test...</div>
+    </div>
+
+    <script>
+        // Format phone number - improved to allow deletion on mobile
+        function formatPhoneNumber(input) {
+            // Store cursor position before formatting
+            const cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            const oldDigitCount = oldValue.replace(/\D/g, '').length;
+            
+            // Remove all non-digits
+            let value = input.value.replace(/\D/g, '');
+            const newDigitCount = value.length;
+            
+            // Check if user is deleting (fewer digits than before)
+            const isDeleting = newDigitCount < oldDigitCount;
+            
+            // If deleting and value is empty, allow it
+            if (isDeleting && value.length === 0) {
+                input.value = '';
+                input.setSelectionRange(0, 0);
+                return;
+            }
+            
+            // Limit to 10 digits
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            
+            // Format with spaces
+            let formattedValue = '';
+            if (value.length >= 6) {
+                formattedValue = value.substring(0, 3) + ' ' + value.substring(3, 6) + ' ' + value.substring(6);
+            } else if (value.length >= 3) {
+                formattedValue = value.substring(0, 3) + ' ' + value.substring(3);
+            } else {
+                formattedValue = value;
+            }
+            
+            // Only update if value actually changed (prevents interference during deletion)
+            if (formattedValue === oldValue && !isDeleting) {
+                return;
+            }
+            
+            // Update the value
+            input.value = formattedValue;
+            
+            // Calculate new cursor position
+            let newCursorPosition = cursorPosition;
+            
+            if (isDeleting) {
+                // When deleting, place cursor right after the last remaining digit
+                const digitsBeforeOldCursor = oldValue.substring(0, cursorPosition).replace(/\D/g, '').length;
+                // Adjust for the digit that was deleted
+                const targetDigitPosition = Math.max(0, digitsBeforeOldCursor - 1);
+                
+                let digitCount = 0;
+                for (let i = 0; i <= formattedValue.length; i++) {
+                    if (i < formattedValue.length && /\d/.test(formattedValue[i])) {
+                        if (digitCount === targetDigitPosition) {
+                            // Place cursor after this digit
+                            newCursorPosition = i + 1;
+                            break;
+                        }
+                        digitCount++;
+                    } else if (i === formattedValue.length) {
+                        // End of string
+                        newCursorPosition = i;
+                        break;
+                    }
+                }
+            } else {
+                // When adding, move cursor forward accounting for spaces
+                const digitsBeforeOldCursor = oldValue.substring(0, cursorPosition).replace(/\D/g, '').length;
+                let digitCount = 0;
+                for (let i = 0; i <= formattedValue.length; i++) {
+                    if (i < formattedValue.length && /\d/.test(formattedValue[i])) {
+                        digitCount++;
+                        if (digitCount > digitsBeforeOldCursor) {
+                            newCursorPosition = i + 1;
+                            break;
+                        }
+                    } else if (i === formattedValue.length) {
+                        newCursorPosition = i;
+                        break;
+                    }
+                }
+            }
+            
+            // Ensure cursor position is within bounds
+            newCursorPosition = Math.max(0, Math.min(newCursorPosition, formattedValue.length));
+            
+            // Set cursor position (use setTimeout for mobile compatibility)
+            setTimeout(() => {
+                input.setSelectionRange(newCursorPosition, newCursorPosition);
+            }, 0);
+        }
+
+        // Phone number formatting
+        const phoneInputs = document.querySelectorAll('#contact, #guarantorNumber');
+        phoneInputs.forEach(input => {
+            // Store previous value to detect deletions
+            let previousValue = '';
+            const resultDiv = input.id === 'contact' ? 
+                document.getElementById('contactResult') : 
+                document.getElementById('guarantorResult');
+            
+            input.addEventListener('input', function(e) {
+                const currentValue = this.value;
+                
+                // Update result display
+                const digits = currentValue.replace(/\D/g, '');
+                resultDiv.innerHTML = `
+                    <strong>Current value:</strong> "${currentValue}"<br>
+                    <strong>Digits only:</strong> ${digits.length} digits (${digits || 'empty'})<br>
+                    <strong>Status:</strong> ${currentValue.length < previousValue.length ? '🗑️ Deleting' : '✏️ Typing'}
+                `;
+                
+                // Allow deletion to proceed naturally
+                if (currentValue.length < previousValue.length) {
+                    // User is deleting - format after a small delay to allow deletion to complete
+                    setTimeout(() => {
+                        formatPhoneNumber(this);
+                        const digits = this.value.replace(/\D/g, '');
+                        resultDiv.innerHTML = `
+                            <strong>Current value:</strong> "${this.value}"<br>
+                            <strong>Digits only:</strong> ${digits.length} digits (${digits || 'empty'})<br>
+                            <strong>Status:</strong> ✅ Formatted after deletion
+                        `;
+                    }, 10);
+                } else {
+                    // User is typing - format immediately
+                    formatPhoneNumber(this);
+                    const digits = this.value.replace(/\D/g, '');
+                    resultDiv.innerHTML = `
+                        <strong>Current value:</strong> "${this.value}"<br>
+                        <strong>Digits only:</strong> ${digits.length} digits (${digits || 'empty'})<br>
+                        <strong>Status:</strong> ✅ Formatted
+                    `;
+                }
+                
+                previousValue = currentValue;
+            });
+            
+            // Ensure backspace and delete work properly on mobile
+            input.addEventListener('keydown', function(e) {
+                // Store value before keydown for comparison
+                previousValue = this.value;
+                
+                // Allow backspace and delete to work normally
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    // Don't prevent default - let deletion happen
+                    return true;
+                }
+            });
+            
+            // Also handle paste events
+            input.addEventListener('paste', function(e) {
+                // Allow paste to complete, then format
+                setTimeout(() => {
+                    formatPhoneNumber(this);
+                    const digits = this.value.replace(/\D/g, '');
+                    resultDiv.innerHTML = `
+                        <strong>Current value:</strong> "${this.value}"<br>
+                        <strong>Digits only:</strong> ${digits.length} digits (${digits || 'empty'})<br>
+                        <strong>Status:</strong> ✅ Formatted after paste
+                    `;
+                }, 10);
+            });
+        });
+    </script>
+</body>
+</html>
+

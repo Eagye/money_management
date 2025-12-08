@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Deposits - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+            background: #ffffff;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 260px;
+            background: var(--surface);
+            border-right: 1px solid var(--border-color);
+            padding: 0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .admin-sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            padding: 24px;
+            border-bottom: 2px solid var(--border-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            color: white;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 16px;
+            margin: 0;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 4px;
+        }
+
+        .sidebar-menu-button {
+            width: 100%;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 6px;
+            margin: 4px 8px;
+            position: relative;
+        }
+
+        .sidebar-menu-button::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: var(--primary-color);
+            border-radius: 0 3px 3px 0;
+            transition: height 0.3s ease;
+        }
+
+        .sidebar-menu-button:hover {
+            background: linear-gradient(90deg, rgba(75, 85, 99, 0.08) 0%, transparent 100%);
+            color: var(--primary-color);
+            padding-left: 24px;
+        }
+
+        .sidebar-menu-button:hover span:first-child {
+            transform: translateX(-3px);
+        }
+
+        .sidebar-menu-button:hover::before {
+            height: 60%;
+        }
+
+        /* Main Content */
+        .admin-main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px;
+            background: #ffffff;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .page-header:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+            letter-spacing: -0.8px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .page-subtitle::after {
+            content: ' 🔄';
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--background);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .date-selector label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .date-selector input[type="date"] {
+            padding: 8px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .date-selector input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .date-selector input[type="date"]:hover {
+            border-color: var(--primary-color);
+        }
+
+        .back-btn {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(75, 85, 99, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-color) 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
+        }
+
+        .back-btn:hover span:first-child {
+            transform: translateX(-3px);
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Summary Card */
+        .summary-card {
+            background: linear-gradient(135deg, rgba(75, 85, 99, 0.95) 0%, rgba(75, 85, 99, 0.85) 100%);
+            color: white;
+            padding: 18px 22px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(75, 85, 99, 0.18), 0 2px 6px rgba(75, 85, 99, 0.08);
+            margin-bottom: 18px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card.collapsed {
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .summary-card-toggle {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+
+        .summary-card-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .summary-card-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-10%, -10%) rotate(180deg); }
+        }
+
+        .summary-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary-value {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.05;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-date {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 8px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Transactions Table */
+        .transactions-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .transactions-container:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .transactions-header {
+            padding: 20px 24px;
+            border-bottom: 2px solid var(--border-color);
+            background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transactions-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .transactions-table thead {
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .transactions-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .transactions-table td {
+            padding: 16px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            vertical-align: middle;
+            transition: background-color 0.2s ease;
+        }
+
+        .transactions-table th:nth-child(1),
+        .transactions-table td:nth-child(1) {
+            width: 10%;
+        }
+
+        .transactions-table th:nth-child(2),
+        .transactions-table td:nth-child(2) {
+            width: 30%;
+        }
+
+        .transactions-table th:nth-child(3),
+        .transactions-table td:nth-child(3) {
+            width: 15%;
+        }
+
+        .transactions-table th:nth-child(4),
+        .transactions-table td:nth-child(4) {
+            width: 15%;
+            text-align: right;
+        }
+
+        .transactions-table th:nth-child(5),
+        .transactions-table td:nth-child(5) {
+            width: 20%;
+        }
+
+        .transactions-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .transactions-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .transactions-table tbody tr:hover {
+            background: rgba(75, 85, 99, 0.05) !important;
+            transform: scale(1.001);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .transactions-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .client-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .client-phone {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .agent-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .agent-name-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-name-link::before {
+            content: '👤';
+            font-size: 14px;
+        }
+
+        .agent-name-link::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            transition: left 0.5s;
+        }
+
+        .agent-name-link:hover {
+            color: white;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+            transform: translateY(-2px);
+            scale: 1.02;
+        }
+
+        .agent-name-link:hover::after {
+            left: 100%;
+        }
+
+        .agent-transactions-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .agent-transaction-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .agent-transaction-column {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .agent-transaction-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .agent-transaction-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .agent-transaction-value.monospace {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+            font-size: 12px;
+        }
+
+        .agent-transaction-amount {
+            text-align: right;
+            color: rgba(37, 99, 235, 0.75);
+        }
+
+        .agent-transaction-notes {
+            flex: 1 0 100%;
+            font-size: 11px;
+            color: var(--text-secondary);
+            border-top: 1px dashed rgba(15, 23, 42, 0.12);
+            padding-top: 8px;
+            margin-top: 2px;
+        }
+
+        .agent-transaction-notes span {
+            font-style: italic;
+        }
+
+        .dialog-body.agent-transactions-body {
+            background: #ffffff;
+        }
+
+        .close-dialog-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .close-dialog-btn:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .status-pill.pending {
+            background: rgba(251, 191, 36, 0.12);
+            color: #b45309;
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .status-pill.approved {
+            background: rgba(16, 185, 129, 0.12);
+            color: #047857;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.rejected {
+            background: rgba(75, 85, 99, 0.12);
+            color: #b91c1c;
+            border-color: rgba(75, 85, 99, 0.3);
+        }
+
+        .status-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .status-action-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .status-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .status-action-btn.approve-btn {
+            color: var(--success-color);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .status-action-btn.reject-btn {
+            color: var(--error-color);
+            border-color: rgba(75, 85, 99, 0.5);
+        }
+
+        .status-action-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .status-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .dialog-textarea {
+            width: 100%;
+            min-height: 90px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .dialog-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        .amount {
+            font-weight: 800;
+            color: var(--success-color);
+            font-size: 15px;
+            letter-spacing: -0.3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--error-color);
+        }
+
+        .error-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .error-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .error-state-text {
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                width: 220px;
+            }
+
+            .admin-main {
+                margin-left: 220px;
+                padding: 16px;
+            }
+
+            .transactions-table {
+                font-size: 11px;
+            }
+
+            .transactions-table th,
+            .transactions-table td {
+                padding: 8px 12px;
+            }
+
+            .summary-card-toggle {
+                display: flex;
+            }
+
+            .summary-card {
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
+                        <span style="font-size: 16px; display: inline-block; transform: translateX(0); transition: transform 0.3s ease;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Daily Deposits</h1>
+                    <p class="page-subtitle">View all deposits collected for a specific day</p>
+                </div>
+                <div class="date-selector">
+                    <label for="datePicker">Select Date:</label>
+                    <input type="date" id="datePicker" />
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block; transition: transform 0.3s ease;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="summary-card" id="summaryCard" style="display: none;">
+                <button class="summary-card-toggle" id="summaryCardToggle" aria-label="Toggle summary card">−</button>
+                <div class="summary-label">Total Collected</div>
+                <div class="summary-value" id="totalAmount">₵0.00</div>
+                <div class="summary-date" id="summaryDate">--</div>
+            </div>
+
+            <!-- Transactions Container -->
+            <div class="transactions-container">
+                <div class="transactions-header">
+                    <div>
+                        <h2 class="transactions-title">All Agent Transactions</h2>
+                    </div>
+                </div>
+                <div id="transactionsContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading transactions...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateShort(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatPhone(phone) {
+            if (!phone) return 'N/A';
+            const digits = phone.replace(/\D/g, '');
+            if (digits.length === 10) {
+                return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+            }
+            return phone;
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            return str.replace(/[&<>"']/g, (char) => {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return map[char] || char;
+            });
+        }
+
+        function groupTransactionsByAgent(transactions, statuses = {}) {
+            const map = new Map();
+
+            transactions.forEach(transaction => {
+                const agentKey = String(transaction.agent_id ?? 'unknown');
+                if (!map.has(agentKey)) {
+                    map.set(agentKey, {
+                        agent_id: transaction.agent_id ?? null,
+                        agent_key: agentKey,
+                        agent_name: transaction.agent_name || 'Unknown',
+                        transactions: [],
+                        clients: new Set(),
+                        totalAmount: 0,
+                        lastTransaction: null
+                    });
+                }
+
+                const group = map.get(agentKey);
+                group.transactions.push(transaction);
+                group.totalAmount += parseFloat(transaction.amount) || 0;
+                if (transaction.client_id) {
+                    group.clients.add(transaction.client_id);
+                }
+
+                const createdAt = new Date(transaction.created_at);
+                if (!group.lastTransaction || createdAt > new Date(group.lastTransaction.created_at)) {
+                    group.lastTransaction = { created_at: transaction.created_at };
+                }
+            });
+
+            return Array.from(map.values()).map(group => {
+                group.transactionCount = group.transactions.length;
+                group.clientCount = group.clients.size;
+                group.transactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const statusInfo = statuses[group.agent_key] || {};
+                group.status = statusInfo.status || group.transactions[0]?.agent_status || 'pending';
+                group.statusInfo = statusInfo;
+                return group;
+            }).sort((a, b) => b.totalAmount - a.totalAmount);
+        }
+
+        function buildAgentTable(groups) {
+            if (!groups.length) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-title">No Agent Activity</div>
+                        <div class="empty-state-text">No agents recorded deposits for this day.</div>
+                    </div>
+                `;
+            }
+
+            let tableHTML = `
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th>Unique Clients</th>
+                            <th>Transactions</th>
+                            <th>Total Amount</th>
+                            <th>Last Transaction</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            groups.forEach(group => {
+                const lastTime = group.lastTransaction ? formatTime(group.lastTransaction.created_at) : '--';
+
+                tableHTML += `
+                    <tr>
+                        <td>
+                            <button class="agent-name-link" data-agent-key="${group.agent_key}">
+                                ${group.agent_name}
+                            </button>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Click to view all transactions</div>
+                        </td>
+                        <td>
+                            <div class="client-name" style="margin-bottom: 4px;">${group.clientCount || 0}</div>
+                            <div class="client-phone">Unique clients</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">${group.transactionCount}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">Transactions</div>
+                        </td>
+                        <td>
+                            <div class="amount">${formatCurrency(group.totalAmount)}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 12px; color: var(--text-primary); font-weight: 600;">${lastTime}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">Last update</div>
+                        </td>
+                        <td>
+                            ${renderStatusBadge(group.status)}
+                        </td>
+                        <td>
+                            ${renderActionButtons(group)}
+                        </td>
+                    </tr>
+            `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            return tableHTML;
+        }
+
+        function renderStatusBadge(status) {
+            const normalized = (status || 'pending').toLowerCase();
+            const textMap = {
+                approved: 'Approved',
+                rejected: 'Rejected',
+                pending: 'Pending'
+            };
+            const className = ['approved', 'rejected'].includes(normalized) ? normalized : 'pending';
+            return `<span class="status-pill ${className}">${textMap[normalized] || 'Pending'}</span>`;
+        }
+
+        function renderActionButtons(group) {
+            if (!group.agent_id) {
+                return `<span style="font-size: 12px; color: var(--text-secondary);">No agent ID</span>`;
+            }
+
+            const disableApprove = group.status === 'approved';
+            const disableReject = group.transactionCount === 0 || group.status === 'approved';
+
+            return `
+                <div class="status-actions">
+                    <button class="status-action-btn approve-btn" data-agent-id="${group.agent_id}" ${disableApprove ? 'disabled data-static-disabled="true"' : ''}>
+                        ✅ Approve
+                    </button>
+                    <button class="status-action-btn reject-btn" data-agent-id="${group.agent_id}" ${disableReject ? 'disabled data-static-disabled="true"' : ''}>
+                        ✖ Reject
+                    </button>
+                </div>
+            `;
+        }
+
+        function findGroupByAgentId(agentId) {
+            return agentGroups.find(group => Number(group.agent_id) === Number(agentId));
+        }
+
+        function showApprovalDialog(agentName = 'this agent') {
+            const safeName = escapeHtml(agentName || 'this agent');
+            return new Promise((resolve) => {
+                if (typeof Dialog === 'undefined') {
+                    const confirmed = window.confirm(`Approve deposits recorded by ${agentName}?`);
+                    resolve(!!confirmed);
+                    return;
+                }
+
+                Dialog.show({
+                    title: 'Approve Daily Deposits',
+                    message: `<p style="margin:0; font-size:14px; line-height:1.6; color:var(--text-primary);">Approve <strong>${safeName}</strong>'s deposits for this day?</p>`,
+                    type: 'info',
+                    showCancel: true,
+                    confirmText: 'Approve',
+                    cancelText: 'Cancel',
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+        }
+
+        function showRejectionDialog(agentName = 'this agent') {
+            const safeName = escapeHtml(agentName || 'this agent');
+            return new Promise((resolve) => {
+                if (typeof Dialog === 'undefined') {
+                    const confirmed = window.confirm(`Reject deposits recorded by ${agentName} for this day?`);
+                    if (!confirmed) {
+                        resolve({ confirmed: false, note: '' });
+                        return;
+                    }
+                    const note = window.prompt('Optional note for this rejection?') || '';
+                    resolve({ confirmed: true, note: note.trim() });
+                    return;
+                }
+
+                Dialog.show({
+                    title: 'Reject Daily Deposits',
+                    message: `
+                        <div style="display:grid; gap:12px;">
+                            <p style="margin:0; font-size:14px; line-height:1.6;">Reject deposits recorded by <strong>${safeName}</strong> for this day?</p>
+                            <div>
+                                <label for="rejectNoteInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Admin note (optional)</label>
+                                <textarea id="rejectNoteInput" class="dialog-textarea" placeholder="Reason for rejection..."></textarea>
+                            </div>
+                        </div>
+                    `,
+                    type: 'error',
+                    showCancel: true,
+                    confirmText: 'Reject',
+                    cancelText: 'Cancel',
+                    onConfirm: () => {
+                        const noteField = document.getElementById('rejectNoteInput');
+                        resolve({ confirmed: true, note: noteField ? noteField.value.trim() : '' });
+                    },
+                    onCancel: () => resolve({ confirmed: false, note: '' })
+                });
+            });
+        }
+
+        function showAgentTransactionsDialog(group, date) {
+            const overlay = document.createElement('div');
+            overlay.className = 'dialog-overlay';
+            overlay.id = 'agentTransactionsOverlay';
+
+            const dialog = document.createElement('div');
+            dialog.className = 'dialog-box';
+            dialog.style.maxWidth = '720px';
+            dialog.style.maxHeight = '90vh';
+            dialog.style.overflowY = 'auto';
+
+            const transactionsList = group.transactions.map(transaction => `
+                <div class="agent-transaction-item">
+                    <div class="agent-transaction-column">
+                        <div class="agent-transaction-label">Time</div>
+                        <div class="agent-transaction-value monospace">${formatTime(transaction.created_at)}</div>
+                    </div>
+                    <div class="agent-transaction-column">
+                        <div class="agent-transaction-label">Client</div>
+                        <div class="agent-transaction-value">${transaction.client_name || 'Unknown'}</div>
+                        <div class="agent-transaction-value" style="font-size:11px; color:var(--text-secondary); font-weight:500;">${formatPhone(transaction.client_phone || '')}</div>
+                    </div>
+                    <div class="agent-transaction-column" style="min-width:120px;">
+                        <div class="agent-transaction-label">Amount</div>
+                        <div class="agent-transaction-value agent-transaction-amount">${formatCurrency(transaction.amount)}</div>
+                    </div>
+                    <div class="agent-transaction-notes">
+                        ${transaction.notes ? transaction.notes : '<span>No notes provided</span>'}
+                    </div>
+                </div>
+            `).join('');
+
+            dialog.innerHTML = `
+                <div class="dialog-header">
+                    <div class="dialog-icon info">👤</div>
+                    <div>
+                        <h3 class="dialog-title" style="margin:0;">${group.agent_name}</h3>
+                        <p style="margin:4px 0 0; color:var(--text-secondary); font-size:13px;">${formatDate(date)}</p>
+                    </div>
+                    <button class="close-dialog-btn">×</button>
+                </div>
+                <div class="dialog-body agent-transactions-body" style="display:grid; gap:16px;">
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:140px; background:var(--background); padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+                            <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Total Amount</div>
+                            <div style="font-size:20px; font-weight:800; color:var(--success-color);">${formatCurrency(group.totalAmount)}</div>
+                        </div>
+                        <div style="flex:1; min-width:140px; background:var(--background); padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+                            <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Transactions</div>
+                            <div style="font-size:20px; font-weight:800; color:var(--text-primary);">${group.transactionCount}</div>
+                        </div>
+                        <div style="flex:1; min-width:140px; background:var(--background); padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+                            <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Unique Clients</div>
+                            <div style="font-size:20px; font-weight:800; color:var(--text-primary);">${group.clientCount || 0}</div>
+                        </div>
+                    </div>
+                    <div class="agent-transactions-list">
+                        ${transactionsList}
+                    </div>
+                </div>
+                <div class="dialog-footer" style="padding: 16px 20px; margin-top: 20px;">
+                    <button class="dialog-btn dialog-btn-primary" id="agentTransactionsClose">Close</button>
+                </div>
+            `;
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            setTimeout(() => overlay.classList.add('show'), 10);
+
+            function closeDialog() {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 300);
+            }
+
+            document.getElementById('agentTransactionsClose').addEventListener('click', closeDialog);
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeDialog();
+                }
+            });
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeDialog();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
+        }
+
+        let refreshInterval = null;
+        let currentDate = null;
+        let allTransactions = [];
+        let agentGroups = [];
+        let statusActionInProgress = false;
+        let statusMap = {};
+
+        async function loadDailyDeposits(date, showLoading = true) {
+            const container = document.getElementById('transactionsContainer');
+
+            if (showLoading) {
+                container.innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading transactions...</div>
+                    </div>
+                `;
+            }
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getDailyDeposits(date);
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load daily deposits');
+                }
+
+                const data = response.data;
+                allTransactions = data.transactions || [];
+                statusMap = data.statuses || {};
+                agentGroups = groupTransactionsByAgent(allTransactions, statusMap);
+
+                const totalAmount = allTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                document.querySelector('.summary-label').textContent = 'Total Collected';
+                document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+                document.getElementById('summaryDate').textContent = formatDateShort(date);
+                document.getElementById('summaryCard').style.display = 'block';
+                
+                // Setup collapse functionality for mobile
+                setupSummaryCardCollapse();
+
+                if (agentGroups.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-title">No Deposits Found</div>
+                            <div class="empty-state-text">No deposits were recorded for ${formatDateShort(date)}</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = buildAgentTable(agentGroups);
+                attachAgentClickHandlers(date);
+                attachStatusActionHandlers(date);
+
+            } catch (error) {
+                console.error('Error loading daily deposits:', error);
+                const errorMessage = error?.message || 'Failed to load daily deposits. Please try again.';
+                const friendlyMessage = errorMessage.toLowerCase().includes('too many requests')
+                    ? 'Too many requests. Please wait a few seconds and the page will refresh automatically.'
+                    : errorMessage;
+
+                container.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">⚠️</div>
+                        <div class="error-state-title">Error Loading Deposits</div>
+                        <div class="error-state-text">${friendlyMessage}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            refreshInterval = setInterval(() => {
+                if (currentDate) {
+                    loadDailyDeposits(currentDate, false);
+                }
+            }, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        function attachAgentClickHandlers(date) {
+            const agentLinks = document.querySelectorAll('.agent-name-link');
+            agentLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const agentKey = this.getAttribute('data-agent-key');
+                    const group = agentGroups.find(g => g.agent_key === agentKey);
+                    if (group) {
+                        showAgentTransactionsDialog(group, date);
+                    }
+                });
+            });
+        }
+
+        function attachStatusActionHandlers(date) {
+            const approveButtons = document.querySelectorAll('.approve-btn');
+            const rejectButtons = document.querySelectorAll('.reject-btn');
+
+            approveButtons.forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    if (this.disabled) return;
+                    const agentId = parseInt(this.getAttribute('data-agent-id'));
+                    if (!agentId) return;
+                    const group = findGroupByAgentId(agentId);
+                    const agentName = group?.agent_name || 'this agent';
+                    const confirmApprove = await showApprovalDialog(agentName);
+                    if (!confirmApprove) return;
+                    await updateAgentDailyStatus(agentId, 'approve', null);
+                });
+            });
+
+            rejectButtons.forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    if (this.disabled) return;
+                    const agentId = parseInt(this.getAttribute('data-agent-id'));
+                    if (!agentId) return;
+                    const group = findGroupByAgentId(agentId);
+                    const agentName = group?.agent_name || 'this agent';
+                    const rejection = await showRejectionDialog(agentName);
+                    if (!rejection.confirmed) return;
+                    await updateAgentDailyStatus(agentId, 'reject', rejection.note);
+                });
+            });
+        }
+
+        async function updateAgentDailyStatus(agentId, action, note) {
+            if (!currentDate || statusActionInProgress) return;
+            if (typeof AdminAPI === 'undefined' || typeof AdminAPI.updateDailyStatus !== 'function') {
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error('Admin API not available. Please refresh the page.', 'Error');
+                } else {
+                    alert('Admin API not available. Please refresh the page.');
+                }
+                return;
+            }
+            statusActionInProgress = true;
+            toggleActionButtons(true);
+
+            try {
+                const response = await AdminAPI.updateDailyStatus({
+                    agent_id: agentId,
+                    date: currentDate,
+                    action,
+                    note
+                });
+
+                if (!response?.success) {
+                    throw new Error(response?.error || 'Failed to update status');
+                }
+
+                if (typeof Dialog !== 'undefined') {
+                    if (action === 'approve') {
+                        Dialog.success('Daily deposits have been approved successfully.', 'Success');
+                    } else {
+                        Dialog.warning('Daily deposits have been rejected successfully. All transactions for this day have been removed.', 'Rejected');
+                    }
+                } else {
+                    alert(action === 'approve' ? 'Daily deposits have been approved successfully.' : 'Daily deposits have been rejected successfully. All transactions for this day have been removed.');
+                }
+
+                await loadDailyDeposits(currentDate, true);
+            } catch (error) {
+                console.error('Status update error:', error);
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(error.message || 'Failed to update status', 'Error');
+                } else {
+                    alert(error.message || 'Failed to update status');
+                }
+            } finally {
+                statusActionInProgress = false;
+                toggleActionButtons(false);
+            }
+        }
+
+        function toggleActionButtons(disabled) {
+            document.querySelectorAll('.status-action-btn').forEach(btn => {
+                if (btn.getAttribute('data-static-disabled') === 'true') {
+                    btn.disabled = true;
+                } else {
+                    btn.disabled = disabled;
+                }
+            });
+        }
+
+        function initializePage() {
+            const datePicker = document.getElementById('datePicker');
+            const today = new Date().toISOString().split('T')[0];
+            datePicker.value = today;
+            currentDate = today;
+
+            loadDailyDeposits(today, true);
+            // Auto-refresh disabled - data loads on page load and date change only
+
+            datePicker.addEventListener('change', function() {
+                const selectedDate = this.value;
+                if (selectedDate) {
+                    currentDate = selectedDate;
+                    loadDailyDeposits(selectedDate, true);
+                }
+            });
+        }
+
+        // Setup summary card collapse functionality for mobile (only setup once)
+        let summaryCardCollapseSetup = false;
+        function setupSummaryCardCollapse() {
+            // Only setup once to avoid duplicate event listeners
+            if (summaryCardCollapseSetup) return;
+            
+            const summaryCard = document.getElementById('summaryCard');
+            const toggleBtn = document.getElementById('summaryCardToggle');
+            
+            if (!summaryCard || !toggleBtn) return;
+            
+            summaryCardCollapseSetup = true;
+            
+            // Use data attribute to track collapsed state
+            let isCollapsed = summaryCard.dataset.collapsed === 'true';
+            
+            // Toggle button click handler
+            toggleBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                isCollapsed = !isCollapsed;
+                summaryCard.dataset.collapsed = isCollapsed;
+                if (isCollapsed) {
+                    summaryCard.classList.add('collapsed');
+                    toggleBtn.textContent = '+';
+                    toggleBtn.setAttribute('aria-label', 'Expand summary card');
+                } else {
+                    summaryCard.classList.remove('collapsed');
+                    toggleBtn.textContent = '−';
+                    toggleBtn.setAttribute('aria-label', 'Collapse summary card');
+                }
+            });
+            
+            // Auto-collapse when dropdowns are opened on mobile
+            function isMobile() {
+                return window.innerWidth <= 768;
+            }
+            
+            // Helper function to collapse the card
+            function collapseCard() {
+                if (!isCollapsed && isMobile()) {
+                    isCollapsed = true;
+                    summaryCard.dataset.collapsed = 'true';
+                    summaryCard.classList.add('collapsed');
+                    toggleBtn.textContent = '+';
+                    toggleBtn.setAttribute('aria-label', 'Expand summary card');
+                }
+            }
+            
+            // Listen for dropdown focus/click events (only add once)
+            document.addEventListener('focusin', function(e) {
+                if (!isMobile()) return;
+                
+                const target = e.target;
+                // Check if it's a select dropdown
+                if (target.tagName === 'SELECT' || 
+                    (target.tagName === 'INPUT' && target.type === 'text' && target.closest('.client-search-container'))) {
+                    collapseCard();
+                }
+            });
+            
+            // Also handle click events for select elements (mobile dropdowns)
+            document.addEventListener('click', function(e) {
+                if (!isMobile()) return;
+                
+                const target = e.target;
+                if (target.tagName === 'SELECT') {
+                    collapseCard();
+                }
+            }, true); // Use capture phase to catch before dropdown opens
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+    </script>
+</body>
+</html>
+

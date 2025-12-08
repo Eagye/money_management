@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar-title">
+                Lucky Susu Ent Admin
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">×</button>
+            </div>
+            <div class="admin-name-display" id="adminNameDisplay" style="padding: 12px 16px; color: var(--text-secondary); font-size: 13px; font-weight: 600; border-top: 1px solid var(--border-color); margin-top: 8px;">
+                <span id="adminName">Loading...</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <button class="sidebar-menu-button" id="overviewBtn">
+                        OVERVIEW
+                        <span class="arrow">▼</span>
+                    </button>
+                    <ul class="dropdown-menu" id="overviewDropdown">
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="agentsMenuItem">
+                                Agents
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="agentsSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="viewAgentsMenuItem">Agents</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="createAdminMenuItem">Create</button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="accountsMenuItem">
+                                Accounts
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="accountsSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="clientsMenuItem">Clients</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="newClientsMenuItem">New Clients</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="largestDepositMenuItem">Largest Deposit</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="largestAccountMenuItem">Largest Account</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="dormantAccountMenuItem">Dormant Account</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="smallestDepositMenuItem">Smallest Deposit</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="activeAccountsMenuItem">Active Accounts</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="smallestAccountMenuItem">Smallest Account</button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="depositsMenuItem">
+                                Deposits
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="depositsSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="dailyDepositsMenuItem">Daily Deposits</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="weeklyDepositsMenuItem">Weekly Deposits</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="monthlyDepositsMenuItem">Monthly Deposits</button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="withdrawalsMenuItem">
+                                Withdrawals
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="withdrawalsSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="dailyWithdrawalsMenuItem">Daily Withdrawals</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="weeklyWithdrawalsMenuItem">Weekly Withdrawals</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="monthlyWithdrawalsMenuItem">Monthly Withdrawals</button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="commissionMenuItem">
+                                Commission
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="commissionSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="dailyCommissionMenuItem">Daily Commission</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="weeklyCommissionMenuItem">Weekly Commission</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="monthlyCommissionMenuItem">Monthly Commission</button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;">
+                            <button class="dropdown-item" id="logoutMenuItem" style="color: var(--primary-color); font-weight: 700;">
+                                Log Out
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1 class="admin-welcome-title">Welcome to Lucky Susu Ent<span id="adminNameWelcome" style="color: var(--primary-color); font-weight: 700; margin-left: 8px;"></span></h1>
+                <p class="admin-welcome-text">
+                    Monitor Lucky Susu Ent activity from a single pane. Use the quick actions below to explore agent metrics, review collections, or jump into the field-facing experience when you need to troubleshoot.
+                </p>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Agents</div>
+                    <div class="metric-value" id="totalAgents">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Total Clients</div>
+                    <div class="metric-value" id="totalClients">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Female Clients</div>
+                    <div class="metric-value" id="femaleClients">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Male Clients</div>
+                    <div class="metric-value" id="maleClients">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">New Clients Today</div>
+                    <div class="metric-value" id="newClientsToday">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Deposits Today</div>
+                    <div class="metric-value" id="depositsToday">₵0.00</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Withdrawals Today</div>
+                    <div class="metric-value" id="withdrawalsToday">₵0.00</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Commission Today</div>
+                    <div class="metric-value" id="commissionToday">₵0.00</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Active Accounts</div>
+                    <div class="metric-value" id="activeAccounts">0</div>
+                    <div class="metric-note">As of <span id="activeAccountsDate">--</span></div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Dormant Accounts</div>
+                    <div class="metric-value" id="dormantAccounts">0</div>
+                    <div class="metric-note">No deposits since <span id="dormantAccountsDate">--</span></div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Largest Deposit</div>
+                    <div class="metric-value" id="largestDeposit">₵0.00</div>
+                    <div class="metric-attribution" id="largestDepositAttribution">--</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Smallest Deposit</div>
+                    <div class="metric-value" id="smallestDeposit">₵0.00</div>
+                    <div class="metric-attribution" id="smallestDepositAttribution">--</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Largest Account</div>
+                    <div class="metric-value" id="largestAccount">₵0.00</div>
+                    <div class="metric-attribution" id="largestAccountAttribution">--</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Smallest Account</div>
+                    <div class="metric-value" id="smallestAccount">₵0.00</div>
+                    <div class="metric-attribution" id="smallestAccountAttribution">--</div>
+                </div>
+            </div>
+
+            <!-- Agents Section -->
+            <div class="agents-section" id="agentsSection">
+                <div class="section-header">
+                    <h2 class="section-title">Registered Agents</h2>
+                    <button class="btn btn-secondary" id="closeAgentsBtn">Close</button>
+                </div>
+                <div id="agentsContainer">
+                    <div class="loading-state">Loading agents...</div>
+                </div>
+            </div>
+
+            <!-- Clients Section -->
+            <div class="agents-section" id="clientsSection">
+                <div class="section-header">
+                    <h2 class="section-title">All Clients by Agent</h2>
+                    <button class="btn btn-secondary" id="closeClientsBtn">Close</button>
+                </div>
+                <div id="clientsContainer">
+                    <div class="loading-state">Loading clients...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        // This script MUST run before any other scripts to prevent unauthorized access
+        (function() {
+            // Check authentication immediately
+            function checkAdminAuth() {
+                // Get token from localStorage
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    
+                    // Token exists - authentication passed
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                // Clear any stored user data
+                localStorage.removeItem('user');
+                // Redirect to login page
+                window.location.href = '/index.html';
+            }
+            
+            // Run check immediately - before DOM is ready
+            // This prevents any content from loading if not authenticated
+            if (!checkAdminAuth()) {
+                // If not authenticated, hide body content and redirect
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                // Add a loading message
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            // Also check when DOM is ready (backup check)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        // Load and display admin name
+        function loadAdminName() {
+            try {
+                const userData = localStorage.getItem('user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    const adminName = user.name || 'Admin';
+                    
+                    // Update sidebar admin name
+                    const adminNameDisplay = document.getElementById('adminNameDisplay');
+                    const adminNameElement = document.getElementById('adminName');
+                    if (adminNameElement) {
+                        adminNameElement.textContent = adminName;
+                    }
+                    
+                    // Update welcome title admin name
+                    const adminNameWelcome = document.getElementById('adminNameWelcome');
+                    if (adminNameWelcome) {
+                        adminNameWelcome.textContent = user.name ? `, ${user.name}` : '';
+                    }
+                } else {
+                    const adminNameElement = document.getElementById('adminName');
+                    if (adminNameElement) {
+                        adminNameElement.textContent = 'Admin';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading admin name:', error);
+                const adminNameElement = document.getElementById('adminName');
+                if (adminNameElement) {
+                    adminNameElement.textContent = 'Admin';
+                }
+            }
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        // Auto-refresh interval (30 seconds)
+        let dashboardRefreshInterval = null;
+        const DASHBOARD_REFRESH_INTERVAL_MS = 30000; // 30 seconds
+
+        // Load dashboard data
+        async function loadDashboardData(silent = false) {
+            try {
+                    // Load largest accounts to get the ultimate largest
+                    if (typeof AdminAPI !== 'undefined') {
+                        try {
+                            const accountsResponse = await AdminAPI.getLargestAccountsByAgent();
+                            if (accountsResponse && accountsResponse.success && accountsResponse.data && accountsResponse.data.length > 0) {
+                                const accounts = accountsResponse.data;
+                                const ultimate = accounts.reduce((max, account) => {
+                                    return parseFloat(account.current_balance) > parseFloat(max.current_balance) ? account : max;
+                                }, accounts[0]);
+                                
+                                if (ultimate) {
+                                    document.getElementById('largestAccount').textContent = formatCurrency(ultimate.current_balance);
+                                    document.getElementById('largestAccountAttribution').textContent = `${ultimate.name || 'Unknown'} · ${ultimate.agent_name || 'Unknown Agent'}`;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error loading largest accounts:', err);
+                        }
+
+                        // Load smallest accounts to get the ultimate smallest
+                        try {
+                            const smallestAccountsResponse = await AdminAPI.getSmallestAccountsByAgent();
+                            if (smallestAccountsResponse && smallestAccountsResponse.success && smallestAccountsResponse.data && smallestAccountsResponse.data.length > 0) {
+                                const accounts = smallestAccountsResponse.data;
+                                const ultimate = accounts.reduce((min, account) => {
+                                    return parseFloat(account.current_balance) < parseFloat(min.current_balance) ? account : min;
+                                }, accounts[0]);
+                                
+                                if (ultimate) {
+                                    document.getElementById('smallestAccount').textContent = formatCurrency(ultimate.current_balance);
+                                    document.getElementById('smallestAccountAttribution').textContent = `${ultimate.name || 'Unknown'} · ${ultimate.agent_name || 'Unknown Agent'}`;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error loading smallest accounts:', err);
+                        }
+
+                    // Load largest deposits for today to get the ultimate largest
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        const depositsResponse = await AdminAPI.getLargestDepositsByAgent(today);
+                        if (depositsResponse && depositsResponse.success && depositsResponse.data && depositsResponse.data.length > 0) {
+                            const deposits = depositsResponse.data;
+                            const ultimateDeposit = deposits.reduce((max, deposit) => {
+                                return parseFloat(deposit.amount) > parseFloat(max.amount) ? deposit : max;
+                            }, deposits[0]);
+                            
+                            if (ultimateDeposit) {
+                                document.getElementById('largestDeposit').textContent = formatCurrency(ultimateDeposit.amount);
+                                document.getElementById('largestDepositAttribution').textContent = `${ultimateDeposit.client_name || 'Unknown'} · ${ultimateDeposit.agent_name || 'Unknown Agent'}`;
+                            }
+                        } else {
+                            // No deposits for today
+                            document.getElementById('largestDeposit').textContent = '₵0.00';
+                            document.getElementById('largestDepositAttribution').textContent = '--';
+                        }
+                    } catch (err) {
+                        console.error('Error loading largest deposits:', err);
+                        document.getElementById('largestDeposit').textContent = '₵0.00';
+                        document.getElementById('largestDepositAttribution').textContent = '--';
+                    }
+
+                    // Load smallest deposits for today to get the ultimate smallest
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        const smallestDepositsResponse = await AdminAPI.getSmallestDepositsByAgent(today);
+                        if (smallestDepositsResponse && smallestDepositsResponse.success && smallestDepositsResponse.data && smallestDepositsResponse.data.length > 0) {
+                            const deposits = smallestDepositsResponse.data;
+                            const ultimateSmallestDeposit = deposits.reduce((min, deposit) => {
+                                return parseFloat(deposit.amount) < parseFloat(min.amount) ? deposit : min;
+                            }, deposits[0]);
+                            
+                            if (ultimateSmallestDeposit) {
+                                document.getElementById('smallestDeposit').textContent = formatCurrency(ultimateSmallestDeposit.amount);
+                                document.getElementById('smallestDepositAttribution').textContent = `${ultimateSmallestDeposit.client_name || 'Unknown'} · ${ultimateSmallestDeposit.agent_name || 'Unknown Agent'}`;
+                            }
+                        } else {
+                            // No deposits for today
+                            document.getElementById('smallestDeposit').textContent = '₵0.00';
+                            document.getElementById('smallestDepositAttribution').textContent = '--';
+                        }
+                    } catch (err) {
+                        console.error('Error loading smallest deposits:', err);
+                        document.getElementById('smallestDeposit').textContent = '₵0.00';
+                        document.getElementById('smallestDepositAttribution').textContent = '--';
+                    }
+
+                    // Load dormant accounts count
+                    try {
+                        const dormantResponse = await AdminAPI.getDormantAccountsByAgent();
+                        if (dormantResponse && dormantResponse.success && dormantResponse.data) {
+                            const dormantCount = dormantResponse.data.length || 0;
+                            document.getElementById('dormantAccounts').textContent = dormantCount.toString();
+                            
+                            // Calculate date 30 days ago for display
+                            const thirtyDaysAgo = new Date();
+                            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                            document.getElementById('dormantAccountsDate').textContent = thirtyDaysAgo.toISOString().split('T')[0];
+                        }
+                    } catch (err) {
+                        console.error('Error loading dormant accounts:', err);
+                        document.getElementById('dormantAccounts').textContent = '0';
+                    }
+                }
+                
+                // Load dashboard statistics from API
+                try {
+                    const statsResponse = await AdminAPI.getDashboardStats();
+                    if (statsResponse && statsResponse.success && statsResponse.data) {
+                        const stats = statsResponse.data;
+                        document.getElementById('totalAgents').textContent = (stats.total_agents || 0).toString();
+                        document.getElementById('totalClients').textContent = (stats.total_clients || 0).toString();
+                        document.getElementById('femaleClients').textContent = (stats.female_count || 0).toString();
+                        document.getElementById('maleClients').textContent = (stats.male_count || 0).toString();
+                    }
+                } catch (err) {
+                    console.error('Error loading dashboard stats:', err);
+                    document.getElementById('totalAgents').textContent = '0';
+                    document.getElementById('totalClients').textContent = '0';
+                    document.getElementById('femaleClients').textContent = '0';
+                    document.getElementById('maleClients').textContent = '0';
+                }
+                
+                // Load today's statistics from API
+                try {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayStatsResponse = await AdminAPI.getTodayStats(today);
+                    if (todayStatsResponse && todayStatsResponse.success && todayStatsResponse.data) {
+                        const todayStats = todayStatsResponse.data;
+                        document.getElementById('newClientsToday').textContent = (todayStats.new_clients_today || 0).toString();
+                        document.getElementById('depositsToday').textContent = formatCurrency(todayStats.total_deposits || 0);
+                        document.getElementById('withdrawalsToday').textContent = formatCurrency(todayStats.total_withdrawals || 0);
+                        document.getElementById('commissionToday').textContent = formatCurrency(todayStats.total_commission || 0);
+                    } else {
+                        document.getElementById('newClientsToday').textContent = '0';
+                        document.getElementById('depositsToday').textContent = '₵0.00';
+                        document.getElementById('withdrawalsToday').textContent = '₵0.00';
+                        document.getElementById('commissionToday').textContent = '₵0.00';
+                    }
+                } catch (err) {
+                    console.error('Error loading today stats:', err);
+                    document.getElementById('newClientsToday').textContent = '0';
+                    document.getElementById('depositsToday').textContent = '₵0.00';
+                    document.getElementById('withdrawalsToday').textContent = '₵0.00';
+                    document.getElementById('commissionToday').textContent = '₵0.00';
+                }
+                // Load active accounts for current week
+                try {
+                    const today = new Date();
+                    const day = today.getDay();
+                    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                    const monday = new Date(today.setDate(diff));
+                    const sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    
+                    const weekStart = monday.toISOString().split('T')[0];
+                    const weekEnd = sunday.toISOString().split('T')[0];
+                    
+                    const activeAccountsResponse = await AdminAPI.getActiveAccountsByAgent(weekStart, weekEnd);
+                    if (activeAccountsResponse && activeAccountsResponse.success && activeAccountsResponse.data) {
+                        const accountsByAgent = activeAccountsResponse.data;
+                        const totalActiveAccounts = accountsByAgent.reduce((sum, agent) => sum + (agent.clients?.length || 0), 0);
+                        document.getElementById('activeAccounts').textContent = totalActiveAccounts.toString();
+                        document.getElementById('activeAccountsDate').textContent = `${weekStart} to ${weekEnd}`;
+                    } else {
+                        document.getElementById('activeAccounts').textContent = '0';
+                        document.getElementById('activeAccountsDate').textContent = `${weekStart} to ${weekEnd}`;
+                    }
+                } catch (err) {
+                    console.error('Error loading active accounts:', err);
+                    document.getElementById('activeAccounts').textContent = '0';
+                    const today = new Date();
+                    const day = today.getDay();
+                    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                    const monday = new Date(today.setDate(diff));
+                    const sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    document.getElementById('activeAccountsDate').textContent = `${monday.toISOString().split('T')[0]} to ${sunday.toISOString().split('T')[0]}`;
+                }
+                // Dormant accounts count is loaded from API above, don't overwrite it
+                // Smallest deposit is loaded from API above, don't overwrite it
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Toggle dropdown
+        function toggleDropdown() {
+            const dropdown = document.getElementById('overviewDropdown');
+            const button = document.getElementById('overviewBtn');
+            if (dropdown && button) {
+                const isCurrentlyShown = dropdown.classList.contains('show');
+                console.log('Toggling dropdown. Currently shown:', isCurrentlyShown);
+                
+                if (isCurrentlyShown) {
+                    dropdown.classList.remove('show');
+                    button.classList.remove('active');
+                    console.log('Dropdown closed');
+                } else {
+                    dropdown.classList.add('show');
+                    button.classList.add('active');
+                    console.log('Dropdown opened');
+                }
+                
+                console.log('Final state - Show class:', dropdown.classList.contains('show'));
+            } else {
+                console.error('Dropdown or button not found', {
+                    dropdown: !!dropdown,
+                    button: !!button
+                });
+            }
+        }
+
+        // Close dropdown when clicking outside
+        // Use bubble phase (default) so it runs after button click handlers
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('overviewDropdown');
+            const button = document.getElementById('overviewBtn');
+            const depositsSubmenu = document.getElementById('depositsSubmenu');
+            const depositsMenuItem = document.getElementById('depositsMenuItem');
+            const accountsSubmenu = document.getElementById('accountsSubmenu');
+            const accountsMenuItem = document.getElementById('accountsMenuItem');
+            
+            // Don't close if clicking on the button or dropdown
+            const isClickOnButton = button && (button === event.target || button.contains(event.target) || event.target.closest('#overviewBtn'));
+            const isClickOnDropdown = dropdown && (dropdown === event.target || dropdown.contains(event.target) || event.target.closest('#overviewDropdown'));
+            
+            // Close main dropdown if clicking outside
+            if (!isClickOnButton && !isClickOnDropdown) {
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+                if (button) {
+                    button.classList.remove('active');
+                }
+            }
+            
+            // Close deposits submenu if clicking outside (but keep main dropdown open if clicking on other items)
+            if (depositsSubmenu && depositsMenuItem && 
+                !depositsMenuItem.contains(event.target) && 
+                !depositsSubmenu.contains(event.target) &&
+                !event.target.closest('.dropdown-parent')) {
+                depositsSubmenu.classList.remove('show');
+                depositsMenuItem.classList.remove('active');
+            }
+            
+            // Close accounts submenu if clicking outside (but keep main dropdown open if clicking on other items)
+            // Don't close if clicking on a submenu item
+            if (accountsSubmenu && accountsMenuItem && 
+                !accountsMenuItem.contains(event.target) && 
+                !accountsSubmenu.contains(event.target) &&
+                !event.target.closest('.dropdown-parent') &&
+                !event.target.closest('.submenu-item')) {
+                accountsSubmenu.classList.remove('show');
+                accountsMenuItem.classList.remove('active');
+            }
+
+            // Close agents submenu if clicking outside (but keep main dropdown open if clicking on other items)
+            const agentsSubmenu = document.getElementById('agentsSubmenu');
+            const agentsMenuItem = document.getElementById('agentsMenuItem');
+            if (agentsSubmenu && agentsMenuItem && 
+                !agentsMenuItem.contains(event.target) && 
+                !agentsSubmenu.contains(event.target) &&
+                !event.target.closest('.dropdown-parent') &&
+                !event.target.closest('.submenu-item')) {
+                agentsSubmenu.classList.remove('show');
+                agentsMenuItem.classList.remove('active');
+            }
+        });
+
+        // Load and display clients grouped by agent
+        async function loadClients() {
+            const container = document.getElementById('clientsContainer');
+            container.innerHTML = '<div class="loading-state">Loading clients...</div>';
+
+            try {
+                // Check if AdminAPI is available
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getAllClients();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load clients');
+                }
+
+                const clients = response.data || [];
+
+                if (clients.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Clients Found</div>
+                            <div>No clients have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Group clients by agent
+                const clientsByAgent = {};
+                clients.forEach(client => {
+                    const agentName = client.agent_name || 'Unknown Agent';
+                    if (!clientsByAgent[agentName]) {
+                        clientsByAgent[agentName] = [];
+                    }
+                    clientsByAgent[agentName].push(client);
+                });
+
+                // Build HTML for clients grouped by agent
+                let html = '';
+                Object.keys(clientsByAgent).sort().forEach(agentName => {
+                    const agentClients = clientsByAgent[agentName];
+                    html += `
+                        <div class="agent-clients-group" style="margin-bottom: 32px;">
+                            <div class="agent-clients-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border-color);">
+                                <h3 style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin: 0;">
+                                    ${agentName}
+                                </h3>
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary); background: rgba(37, 99, 235, 0.1); padding: 4px 12px; border-radius: 12px;">
+                                    ${agentClients.length} client${agentClients.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                            <div class="agents-grid">
+                                ${agentClients.map(client => `
+                                    <div class="agent-card">
+                                        <div class="agent-name">${client.name || 'Unknown'}</div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Phone:</span>
+                                            <span class="agent-detail-value">${client.phone || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Gender:</span>
+                                            <span class="agent-detail-value">${client.gender || 'N/A'}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Rate:</span>
+                                            <span class="agent-detail-value">${formatCurrency(client.rate || 0)}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Balance:</span>
+                                            <span class="agent-detail-value" style="color: var(--primary-color);">${formatCurrency(client.current_balance || 0)}</span>
+                                        </div>
+                                        <div class="agent-detail">
+                                            <span class="agent-detail-label">Registered:</span>
+                                            <span class="agent-detail-value">${formatDate(client.created_at)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Clients</div>
+                        <div>${error.message || 'Failed to load clients. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Load and display agents
+        async function loadAgents() {
+            const container = document.getElementById('agentsContainer');
+            container.innerHTML = '<div class="loading-state">Loading agents...</div>';
+
+            try {
+                // Check if AdminAPI is available
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getAgents();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load agents');
+                }
+
+                const agents = response.data || [];
+
+                if (agents.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Agents Found</div>
+                            <div>No agents have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="agents-grid">
+                        ${agents.map(agent => `
+                            <div class="agent-card">
+                                <div class="agent-name">${agent.name || 'Unknown'}</div>
+                                <div class="agent-detail">
+                                    <span class="agent-detail-label">Email:</span>
+                                    <span class="agent-detail-value">${agent.email || 'N/A'}</span>
+                                </div>
+                                <div class="agent-detail">
+                                    <span class="agent-detail-label">Contact:</span>
+                                    <span class="agent-detail-value">${agent.contact || 'N/A'}</span>
+                                </div>
+                                <div class="agent-detail">
+                                    <span class="agent-detail-label">Registered:</span>
+                                    <span class="agent-detail-value">${formatDate(agent.created_at)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Agents</div>
+                        <div>${error.message || 'Failed to load agents. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Setup auto-refresh for dashboard
+        function setupDashboardAutoRefresh() {
+            // Clear any existing interval
+            if (dashboardRefreshInterval) {
+                clearInterval(dashboardRefreshInterval);
+            }
+            
+            // Set up new interval to refresh every 30 seconds
+            dashboardRefreshInterval = setInterval(() => {
+                loadDashboardData(true); // Silent refresh (no loading indicators)
+            }, DASHBOARD_REFRESH_INTERVAL_MS);
+        }
+
+        // Refresh when page gains focus
+        function handleDashboardVisibilityChange() {
+            if (!document.hidden) {
+                loadDashboardData(true); // Silent refresh
+            }
+        }
+
+        // Function to initialize event listeners
+        function initializeEventListeners() {
+            // Load admin name first
+            loadAdminName();
+            
+            loadDashboardData();
+            setupDashboardAutoRefresh();
+            
+            // Refresh when page becomes visible
+            document.addEventListener('visibilitychange', handleDashboardVisibilityChange);
+            
+            // Refresh when window gains focus
+            window.addEventListener('focus', () => {
+                loadDashboardData(true);
+            });
+
+            // Debug: Check if elements exist
+            console.log('Initializing event listeners...');
+            const clientsSection = document.getElementById('clientsSection');
+            console.log('Clients section found:', !!clientsSection);
+
+            // Overview dropdown toggle
+            const overviewBtn = document.getElementById('overviewBtn');
+            const overviewDropdown = document.getElementById('overviewDropdown');
+            if (overviewBtn && overviewDropdown) {
+                console.log('Overview button found, attaching click listener');
+                console.log('Button element:', overviewBtn);
+                console.log('Dropdown element:', overviewDropdown);
+                
+                overviewBtn.addEventListener('click', function(e) {
+                    console.log('Overview button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('Current dropdown state - has show class:', overviewDropdown.classList.contains('show'));
+                    
+                    // Toggle directly
+                    const isCurrentlyShown = overviewDropdown.classList.contains('show');
+                    if (isCurrentlyShown) {
+                        overviewDropdown.classList.remove('show');
+                        overviewBtn.classList.remove('active');
+                        console.log('Dropdown closed');
+                    } else {
+                        overviewDropdown.classList.add('show');
+                        overviewBtn.classList.add('active');
+                        console.log('Dropdown opened');
+                    }
+                    
+                    console.log('After toggle - has show class:', overviewDropdown.classList.contains('show'));
+                    console.log('Button has active class:', overviewBtn.classList.contains('active'));
+                    
+                    // Force a reflow to ensure CSS is applied
+                    void overviewDropdown.offsetWidth;
+                });
+            } else {
+                console.error('Overview button or dropdown not found!', {
+                    button: !!overviewBtn,
+                    dropdown: !!overviewDropdown
+                });
+            }
+
+            // Agents menu item - toggle submenu
+            const agentsMenuItem = document.getElementById('agentsMenuItem');
+            const agentsSubmenu = document.getElementById('agentsSubmenu');
+            if (agentsMenuItem && agentsSubmenu) {
+                agentsMenuItem.addEventListener('click', function(e) {
+                    // Don't toggle if clicking on a submenu item
+                    if (e.target.closest('.submenu-item')) {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    agentsSubmenu.classList.toggle('show');
+                    agentsMenuItem.classList.toggle('active');
+                });
+            }
+
+            // View Agents menu item - navigate to agents page
+            const viewAgentsMenuItem = document.getElementById('viewAgentsMenuItem');
+            if (viewAgentsMenuItem) {
+                viewAgentsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/agents.html';
+                });
+            }
+
+            // Create Admin menu item - navigate to create admin page
+            const createAdminMenuItem = document.getElementById('createAdminMenuItem');
+            if (createAdminMenuItem) {
+                createAdminMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/create-admin.html';
+                });
+            }
+
+            // Accounts menu item - toggle submenu
+            const accountsMenuItem = document.getElementById('accountsMenuItem');
+            const accountsSubmenu = document.getElementById('accountsSubmenu');
+            if (accountsMenuItem && accountsSubmenu) {
+                accountsMenuItem.addEventListener('click', function(e) {
+                    // Don't toggle if clicking on a submenu item
+                    if (e.target.closest('.submenu-item')) {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    accountsSubmenu.classList.toggle('show');
+                    accountsMenuItem.classList.toggle('active');
+                });
+            }
+
+            // Clients menu item - navigate to clients page
+            const clientsMenuItem = document.getElementById('clientsMenuItem');
+            if (clientsMenuItem) {
+                clientsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Clients menu item clicked - navigating to clients page');
+                    window.location.href = '/admin/clients.html';
+                });
+            } else {
+                console.error('Clients menu item not found!');
+            }
+
+            // New Clients menu item - navigate to new clients page
+            const newClientsMenuItem = document.getElementById('newClientsMenuItem');
+            if (newClientsMenuItem) {
+                newClientsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('New Clients menu item clicked - navigating to new clients page');
+                    window.location.href = '/admin/new-clients.html';
+                });
+            }
+
+            // Largest Deposit menu item - navigate to largest deposits page
+            const largestDepositMenuItem = document.getElementById('largestDepositMenuItem');
+            if (largestDepositMenuItem) {
+                largestDepositMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Largest Deposit menu item clicked - navigating to largest deposits page');
+                    window.location.href = '/admin/largest-deposits.html';
+                });
+            }
+
+            // Largest Account menu item - navigate to largest accounts page
+            const largestAccountMenuItem = document.getElementById('largestAccountMenuItem');
+            if (largestAccountMenuItem) {
+                largestAccountMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Largest Account menu item clicked - navigating to largest accounts page');
+                    window.location.href = '/admin/largest-accounts.html';
+                });
+            }
+
+            // Dormant Account menu item
+            const dormantAccountMenuItem = document.getElementById('dormantAccountMenuItem');
+            if (dormantAccountMenuItem) {
+                dormantAccountMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Dormant Account menu item clicked - navigating to dormant accounts page');
+                    window.location.href = '/admin/dormant-accounts.html';
+                });
+            }
+
+            // Smallest Deposit menu item - navigate to smallest deposits page
+            const smallestDepositMenuItem = document.getElementById('smallestDepositMenuItem');
+            if (smallestDepositMenuItem) {
+                smallestDepositMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Smallest Deposit menu item clicked - navigating to smallest deposits page');
+                    window.location.href = '/admin/smallest-deposits.html';
+                });
+            }
+
+            // Active Accounts menu item - navigate to active accounts page
+            const activeAccountsMenuItem = document.getElementById('activeAccountsMenuItem');
+            if (activeAccountsMenuItem) {
+                activeAccountsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Active Accounts menu item clicked - navigating to active accounts page');
+                    window.location.href = '/admin/active-accounts.html';
+                });
+            }
+
+            // Smallest Account menu item - navigate to smallest accounts page
+            const smallestAccountMenuItem = document.getElementById('smallestAccountMenuItem');
+            if (smallestAccountMenuItem) {
+                smallestAccountMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Smallest Account menu item clicked - navigating to smallest accounts page');
+                    window.location.href = '/admin/smallest-accounts.html';
+                });
+            }
+
+            // Deposits menu item - toggle submenu
+            const depositsMenuItem = document.getElementById('depositsMenuItem');
+            const depositsSubmenu = document.getElementById('depositsSubmenu');
+            if (depositsMenuItem && depositsSubmenu) {
+                depositsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    depositsSubmenu.classList.toggle('show');
+                    depositsMenuItem.classList.toggle('active');
+                });
+            }
+
+            // Withdrawals menu item - toggle submenu
+            const withdrawalsMenuItem = document.getElementById('withdrawalsMenuItem');
+            const withdrawalsSubmenu = document.getElementById('withdrawalsSubmenu');
+            if (withdrawalsMenuItem && withdrawalsSubmenu) {
+                withdrawalsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    withdrawalsSubmenu.classList.toggle('show');
+                    withdrawalsMenuItem.classList.toggle('active');
+                });
+            }
+
+            // Commission menu item - toggle submenu
+            const commissionMenuItem = document.getElementById('commissionMenuItem');
+            const commissionSubmenu = document.getElementById('commissionSubmenu');
+            if (commissionMenuItem && commissionSubmenu) {
+                commissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    commissionSubmenu.classList.toggle('show');
+                    commissionMenuItem.classList.toggle('active');
+                });
+            }
+
+            // Daily Deposits menu item
+            const dailyDepositsMenuItem = document.getElementById('dailyDepositsMenuItem');
+            if (dailyDepositsMenuItem) {
+                dailyDepositsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/deposits/daily.html';
+                });
+            }
+
+            // Weekly Deposits menu item
+            const weeklyDepositsMenuItem = document.getElementById('weeklyDepositsMenuItem');
+            if (weeklyDepositsMenuItem) {
+                weeklyDepositsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/deposits/weekly.html';
+                });
+            }
+
+            // Monthly Deposits menu item
+            const monthlyDepositsMenuItem = document.getElementById('monthlyDepositsMenuItem');
+            if (monthlyDepositsMenuItem) {
+                monthlyDepositsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/deposits/monthly.html';
+                });
+            }
+
+            // Daily Withdrawals menu item
+            const dailyWithdrawalsMenuItem = document.getElementById('dailyWithdrawalsMenuItem');
+            if (dailyWithdrawalsMenuItem) {
+                dailyWithdrawalsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/withdrawals/daily.html';
+                });
+            }
+
+            // Weekly Withdrawals menu item
+            const weeklyWithdrawalsMenuItem = document.getElementById('weeklyWithdrawalsMenuItem');
+            if (weeklyWithdrawalsMenuItem) {
+                weeklyWithdrawalsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/withdrawals/weekly.html';
+                });
+            }
+
+            // Monthly Withdrawals menu item
+            const monthlyWithdrawalsMenuItem = document.getElementById('monthlyWithdrawalsMenuItem');
+            if (monthlyWithdrawalsMenuItem) {
+                monthlyWithdrawalsMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/withdrawals/monthly.html';
+                });
+            }
+
+            // Daily Commission menu item
+            const dailyCommissionMenuItem = document.getElementById('dailyCommissionMenuItem');
+            if (dailyCommissionMenuItem) {
+                dailyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/daily.html';
+                });
+            }
+
+            // Weekly Commission menu item
+            const weeklyCommissionMenuItem = document.getElementById('weeklyCommissionMenuItem');
+            if (weeklyCommissionMenuItem) {
+                weeklyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/weekly.html';
+                });
+            }
+
+            // Monthly Commission menu item
+            const monthlyCommissionMenuItem = document.getElementById('monthlyCommissionMenuItem');
+            if (monthlyCommissionMenuItem) {
+                monthlyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/monthly.html';
+                });
+            }
+
+            // Close agents section
+            const closeAgentsBtn = document.getElementById('closeAgentsBtn');
+            if (closeAgentsBtn) {
+                closeAgentsBtn.addEventListener('click', function() {
+                    const agentsSection = document.getElementById('agentsSection');
+                    agentsSection.classList.remove('show');
+                });
+            }
+
+            // Close clients section
+            const closeClientsBtn = document.getElementById('closeClientsBtn');
+            if (closeClientsBtn) {
+                closeClientsBtn.addEventListener('click', function() {
+                    const clientsSection = document.getElementById('clientsSection');
+                    clientsSection.classList.remove('show');
+                });
+            }
+
+            // Logout menu item
+            const logoutMenuItem = document.getElementById('logoutMenuItem');
+            if (logoutMenuItem) {
+                logoutMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Clear user session and token
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('user');
+                    // Redirect to login page
+                    window.location.href = '/index.html';
+                });
+            }
+        }
+
+        // Make loadClients available globally for debugging
+        window.loadClients = loadClients;
+
+        // Initialize dashboard - check if DOM is already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeEventListeners);
+        } else {
+            // DOM already loaded, initialize immediately
+            initializeEventListeners();
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (dashboardRefreshInterval) {
+                clearInterval(dashboardRefreshInterval);
+            }
+        });
+        
+        // Debug: Log when initialization completes
+        console.log('Dashboard initialization complete');
+    </script>
+    <script src="/admin/mobile-menu.js"></script>
+</body>
+</html>

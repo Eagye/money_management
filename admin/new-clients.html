@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Clients by Date - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .dates-container {
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        .dates-header {
+            background: rgba(37, 99, 235, 0.08);
+            padding: 12px 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .dates-header h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0;
+        }
+        .dates-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .date-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .date-row:last-child {
+            border-bottom: none;
+        }
+        .date-row:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .date-row:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .date-row.active {
+            background: rgba(37, 99, 235, 0.12);
+            border-left: 4px solid var(--primary-color);
+        }
+        .date-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        .date-row:hover .date-link {
+            color: var(--primary-hover);
+        }
+        .date-row.active .date-link {
+            color: var(--primary-hover);
+        }
+        .date-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .date-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: rgba(37, 99, 235, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+        }
+        .date-row.active .date-count {
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--primary-color);
+        }
+        .clients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-top: 24px;
+        }
+        .clients-table thead {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .clients-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .clients-table td {
+            padding: 14px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            vertical-align: middle;
+        }
+        .clients-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .clients-table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .clients-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .dates-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .dates-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .dates-list::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 999px;
+        }
+        .close-btn {
+            padding: 10px 20px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+        }
+        .close-btn:hover {
+            background: var(--danger-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .close-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; display: inline-block;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">New Clients by Date</h1>
+                    <p class="page-subtitle">Click on a date to view clients registered on that day</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Dates List -->
+            <div class="dates-container">
+                <div class="dates-header">
+                    <h2>Select a Date to View New Clients</h2>
+                </div>
+                <div id="datesList" class="dates-list">
+                    <div class="loading-state" style="padding: 40px; text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading dates...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clients Table -->
+            <div id="clientsTableContainer" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">
+                        Clients Registered on <span id="selectedDate"></span>
+                    </h2>
+                    <button id="closeClientsTableBtn" class="close-btn">
+                        <span>✕</span>
+                        <span>Close</span>
+                    </button>
+                </div>
+                <table class="clients-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Gender</th>
+                            <th>Rate</th>
+                            <th>Balance</th>
+                            <th>Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="noClientsMessage" class="no-clients" style="display: none;">
+                <div class="no-clients-icon">👥</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                    No Clients Found
+                </div>
+                <div>No clients were registered on this date.</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date for display
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Format date to YYYY-MM-DD
+        function formatDateKey(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0];
+        }
+
+        let allClients = [];
+        let clientsByDate = {};
+        let currentSelectedDate = null;
+
+        // Load all clients and group by registration date
+        async function loadClients() {
+            const datesListContainer = document.getElementById('datesList');
+            datesListContainer.innerHTML = '<div class="loading-state" style="padding: 40px; text-align: center;"><div class="loading-spinner"></div><div>Loading clients...</div></div>';
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getAllClients();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load clients');
+                }
+
+                allClients = response.data || [];
+
+                if (allClients.length === 0) {
+                    datesListContainer.innerHTML = `
+                        <div class="no-clients" style="padding: 40px;">
+                            <div class="no-clients-icon">👥</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Clients Found</div>
+                            <div>No clients have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Group clients by registration date
+                clientsByDate = {};
+                allClients.forEach(client => {
+                    const dateKey = formatDateKey(client.created_at);
+                    if (!dateKey) return;
+                    
+                    if (!clientsByDate[dateKey]) {
+                        clientsByDate[dateKey] = [];
+                    }
+                    clientsByDate[dateKey].push(client);
+                });
+
+                // Display dates as links
+                displayDates();
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                datesListContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Clients</div>
+                        <div>${error.message || 'Failed to load clients. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display dates as clickable rows
+        function displayDates() {
+            const datesListContainer = document.getElementById('datesList');
+            const dates = Object.keys(clientsByDate).sort((a, b) => new Date(b) - new Date(a)); // Sort descending (newest first)
+            
+            if (dates.length === 0) {
+                datesListContainer.innerHTML = '<div class="no-clients" style="padding: 40px;"><div class="no-clients-icon">👥</div><div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Dates Found</div><div>No clients have been registered yet.</div></div>';
+                return;
+            }
+
+            datesListContainer.innerHTML = dates.map(dateKey => {
+                const clients = clientsByDate[dateKey];
+                const displayDate = formatDateDisplay(dateKey);
+                return `
+                    <div class="date-row" data-date="${dateKey}" onclick="showDateClients('${dateKey}');">
+                        <a href="#" class="date-link" onclick="event.preventDefault(); showDateClients('${dateKey}'); return false;">
+                            ${displayDate}
+                        </a>
+                        <div class="date-info">
+                            <span class="date-count">${clients.length} client${clients.length !== 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show clients for a specific date
+        function showDateClients(dateKey) {
+            const clients = clientsByDate[dateKey];
+            if (!clients || clients.length === 0) {
+                console.error('No clients found for date:', dateKey);
+                return;
+            }
+
+            currentSelectedDate = dateKey;
+
+            // Update active row
+            document.querySelectorAll('.date-row').forEach(row => {
+                row.classList.remove('active');
+            });
+            const activeRow = document.querySelector(`.date-row[data-date="${dateKey}"]`);
+            if (activeRow) {
+                activeRow.classList.add('active');
+            }
+
+            // Show selected date
+            document.getElementById('selectedDate').textContent = formatDateDisplay(dateKey);
+
+            // Hide no clients message
+            document.getElementById('noClientsMessage').style.display = 'none';
+
+            // Display clients in table
+            const tableBody = document.getElementById('clientsTableBody');
+            const tableContainer = document.getElementById('clientsTableContainer');
+
+            tableContainer.style.display = 'block';
+            tableBody.innerHTML = clients.map(client => `
+                <tr>
+                    <td>${client.id}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">${client.name || 'Unknown'}</td>
+                    <td>${client.phone || 'N/A'}</td>
+                    <td>${client.gender || 'N/A'}</td>
+                    <td style="font-weight: 600;">${formatCurrency(client.rate || 0)}</td>
+                    <td style="font-weight: 700; color: var(--primary-color);">${formatCurrency(client.current_balance || 0)}</td>
+                    <td>${client.agent_name || 'Unknown'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Close clients table
+        function setupCloseButton() {
+            const closeBtn = document.getElementById('closeClientsTableBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    const tableContainer = document.getElementById('clientsTableContainer');
+                    if (tableContainer) {
+                        tableContainer.style.display = 'none';
+                    }
+                    
+                    // Remove active state from date row
+                    document.querySelectorAll('.date-row').forEach(row => {
+                        row.classList.remove('active');
+                    });
+                    
+                    // Clear selected date
+                    currentSelectedDate = null;
+                });
+            }
+        }
+
+        // Initialize page
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                loadClients();
+                setupCloseButton();
+            });
+        } else {
+            loadClients();
+            setupCloseButton();
+        }
+
+        // Make function globally available
+        window.showDateClients = showDateClients;
+    </script>
+</body>
+</html>
+

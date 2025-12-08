@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Accounts by Agent - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .date-range-selector {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+        .date-range-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .date-range-wrapper label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .date-range-wrapper input[type="date"] {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+        .date-range-wrapper input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .load-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .load-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .active-summary-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(22, 163, 74, 0.06));
+            color: var(--text-primary);
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.08);
+            margin-bottom: 24px;
+            border: 1px solid rgba(34, 197, 94, 0.15);
+        }
+        .active-summary-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+        }
+        .active-summary-label::before {
+            content: '✅';
+            font-size: 14px;
+        }
+        .active-summary-count {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            color: #22c55e;
+        }
+        .active-summary-text {
+            font-size: 12px;
+            opacity: 0.7;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .accounts-container {
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        .accounts-header {
+            background: rgba(248, 250, 252, 0.6);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accounts-header h2 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .accounts-header h2::before {
+            content: '💼';
+            font-size: 16px;
+        }
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .refresh-btn:hover {
+            background: rgba(37, 99, 235, 0.12);
+            border-color: rgba(37, 99, 235, 0.25);
+            transform: translateY(-1px);
+        }
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        .refresh-btn.refreshing .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .refresh-icon {
+            font-size: 14px;
+            display: inline-block;
+        }
+        .accounts-list {
+            max-height: 650px;
+            overflow-y: auto;
+        }
+        .agent-group {
+            border-bottom: 2px solid var(--border-color);
+        }
+        .agent-group:last-child {
+            border-bottom: none;
+        }
+        .agent-group-header {
+            background: rgba(34, 197, 94, 0.04);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .agent-group-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+        }
+        .agent-group-count {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .agent-clients-list {
+            padding: 0;
+        }
+        .client-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            transition: all 0.2s ease;
+        }
+        .client-row:last-child {
+            border-bottom: none;
+        }
+        .client-row:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .client-row:hover {
+            background: rgba(34, 197, 94, 0.05);
+        }
+        .client-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        .client-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .client-details {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .client-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .client-stats {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .client-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        .client-stat-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+        .client-stat-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .client-stat-value.deposit-days {
+            color: #22c55e;
+        }
+        .client-stat-value.amount {
+            color: var(--primary-color);
+        }
+        .accounts-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .accounts-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .accounts-list::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 999px;
+        }
+        .no-accounts {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .no-accounts-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; display: inline-block;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Active Accounts by Agent</h1>
+                    <p class="page-subtitle">Clients who received deposits on at least 3 days in a week</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Date Range Selector -->
+            <div class="date-range-selector">
+                <div class="date-range-wrapper">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" class="date-input">
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate" class="date-input">
+                    <button id="loadBtn" class="load-btn">Load Active Accounts</button>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div id="summaryCard" class="active-summary-card" style="display: none;">
+                <div class="active-summary-label">Active Accounts Summary</div>
+                <div class="active-summary-count" id="totalActiveAccounts">0</div>
+                <div class="active-summary-text" id="summaryText">Clients with deposits on 3+ days in the selected week</div>
+            </div>
+
+            <!-- Accounts List -->
+            <div id="accountsContainer" class="accounts-container" style="display: none;">
+                <div class="accounts-header">
+                    <h2 id="accountsHeader">Active Accounts by Agent</h2>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <span class="refresh-icon">🔄</span>
+                        <span class="refresh-text">Refresh</span>
+                    </button>
+                </div>
+                <div id="accountsList" class="accounts-list">
+                    <div class="loading-state" style="padding: 40px; text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading active accounts...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="noAccountsMessage" class="no-accounts" style="display: none;">
+                <div class="no-accounts-icon">📊</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                    No Active Accounts Found
+                </div>
+                <div>No clients received deposits on 3+ days in the selected week.</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date for display
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Calculate week start and end dates (Monday to Sunday)
+        function getCurrentWeek() {
+            const today = new Date();
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+            const monday = new Date(today.setDate(diff));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            return {
+                start: monday.toISOString().split('T')[0],
+                end: sunday.toISOString().split('T')[0]
+            };
+        }
+
+        // Load active accounts for selected date range
+        async function loadActiveAccounts(startDate, endDate) {
+            const accountsContainer = document.getElementById('accountsContainer');
+            const accountsList = document.getElementById('accountsList');
+            const noAccountsMessage = document.getElementById('noAccountsMessage');
+            const accountsHeader = document.getElementById('accountsHeader');
+            const summaryCard = document.getElementById('summaryCard');
+            const totalActiveAccounts = document.getElementById('totalActiveAccounts');
+            const summaryText = document.getElementById('summaryText');
+
+            accountsContainer.style.display = 'block';
+            noAccountsMessage.style.display = 'none';
+            accountsList.innerHTML = '<div class="loading-state" style="padding: 40px; text-align: center;"><div class="loading-spinner"></div><div>Loading active accounts...</div></div>';
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getActiveAccountsByAgent(startDate, endDate);
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load active accounts');
+                }
+
+                const accountsByAgent = response.data || [];
+
+                if (accountsByAgent.length === 0) {
+                    accountsContainer.style.display = 'none';
+                    summaryCard.style.display = 'none';
+                    noAccountsMessage.style.display = 'block';
+                    return;
+                }
+
+                // Calculate total active accounts
+                const totalCount = accountsByAgent.reduce((sum, agent) => sum + (agent.clients?.length || 0), 0);
+                totalActiveAccounts.textContent = totalCount.toString();
+                summaryText.textContent = `Clients with deposits on 3+ days from ${formatDateDisplay(startDate)} to ${formatDateDisplay(endDate)}`;
+                summaryCard.style.display = 'block';
+
+                // Update header with date range
+                accountsHeader.textContent = `Active Accounts by Agent - ${formatDateDisplay(startDate)} to ${formatDateDisplay(endDate)}`;
+
+                // Display accounts grouped by agent
+                let html = '';
+                accountsByAgent.forEach(agent => {
+                    const clients = agent.clients || [];
+                    if (clients.length === 0) return;
+
+                    html += `
+                        <div class="agent-group">
+                            <div class="agent-group-header">
+                                <div class="agent-group-name">${agent.agent_name || 'Unknown Agent'}</div>
+                                <div class="agent-group-count">${clients.length} active client${clients.length !== 1 ? 's' : ''}</div>
+                            </div>
+                            <div class="agent-clients-list">
+                                ${clients.map(client => `
+                                    <div class="client-row">
+                                        <div class="client-info">
+                                            <div class="client-name">${client.client_name || 'Unknown Client'}</div>
+                                            <div class="client-details">
+                                                <div class="client-detail-item">
+                                                    <span>📞</span>
+                                                    <span>${client.client_phone || 'N/A'}</span>
+                                                </div>
+                                                <div class="client-detail-item">
+                                                    <span>⚖️</span>
+                                                    <span>${client.gender || 'N/A'}</span>
+                                                </div>
+                                                <div class="client-detail-item">
+                                                    <span>💰</span>
+                                                    <span>Rate: ${formatCurrency(client.rate || 0)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="client-stats">
+                                            <div class="client-stat">
+                                                <div class="client-stat-label">Deposit Days</div>
+                                                <div class="client-stat-value deposit-days">${client.deposit_days || 0}</div>
+                                            </div>
+                                            <div class="client-stat">
+                                                <div class="client-stat-label">Total Deposits</div>
+                                                <div class="client-stat-value amount">${formatCurrency(client.total_deposits || 0)}</div>
+                                            </div>
+                                            <div class="client-stat">
+                                                <div class="client-stat-label">Balance</div>
+                                                <div class="client-stat-value">${formatCurrency(client.current_balance || 0)}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                accountsList.innerHTML = html || '<div class="no-accounts">No active accounts found</div>';
+            } catch (error) {
+                console.error('Error loading active accounts:', error);
+                accountsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Active Accounts</div>
+                        <div>${error.message || 'Failed to load active accounts. Please try again.'}</div>
+                    </div>
+                `;
+                summaryCard.style.display = 'none';
+            }
+        }
+
+        // Auto-refresh interval (30 seconds)
+        let accountsRefreshInterval = null;
+        const ACCOUNTS_REFRESH_INTERVAL_MS = 30000; // 30 seconds
+        let currentStartDate = null;
+        let currentEndDate = null;
+
+        // Setup auto-refresh for accounts
+        function setupAccountsAutoRefresh() {
+            // Clear any existing interval
+            if (accountsRefreshInterval) {
+                clearInterval(accountsRefreshInterval);
+            }
+            
+            // Set up new interval to refresh every 30 seconds
+            accountsRefreshInterval = setInterval(() => {
+                if (currentStartDate && currentEndDate) {
+                    loadActiveAccounts(currentStartDate, currentEndDate);
+                }
+            }, ACCOUNTS_REFRESH_INTERVAL_MS);
+        }
+
+        // Refresh when page gains focus
+        function handlePageVisibilityChange() {
+            if (!document.hidden && currentStartDate && currentEndDate) {
+                loadActiveAccounts(currentStartDate, currentEndDate);
+            }
+        }
+
+        // Initialize page
+        function initializePage() {
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const loadBtn = document.getElementById('loadBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            // Set current week as default
+            const week = getCurrentWeek();
+            startDateInput.value = week.start;
+            endDateInput.value = week.end;
+            currentStartDate = week.start;
+            currentEndDate = week.end;
+
+            // Load active accounts for current week by default
+            loadActiveAccounts(week.start, week.end);
+
+            // Setup auto-refresh
+            setupAccountsAutoRefresh();
+
+            // Refresh when page becomes visible
+            document.addEventListener('visibilitychange', handlePageVisibilityChange);
+
+            // Refresh when window gains focus
+            window.addEventListener('focus', () => {
+                if (currentStartDate && currentEndDate) {
+                    loadActiveAccounts(currentStartDate, currentEndDate);
+                }
+            });
+
+            // Load button click
+            loadBtn.addEventListener('click', function() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                if (startDate && endDate) {
+                    if (new Date(startDate) > new Date(endDate)) {
+                        alert('Start date must be before or equal to end date');
+                        return;
+                    }
+                    currentStartDate = startDate;
+                    currentEndDate = endDate;
+                    loadActiveAccounts(startDate, endDate);
+                } else {
+                    alert('Please select both start and end dates');
+                }
+            });
+
+            // Refresh button click
+            refreshBtn.addEventListener('click', function() {
+                if (currentStartDate && currentEndDate) {
+                    refreshBtn.classList.add('refreshing');
+                    loadActiveAccounts(currentStartDate, currentEndDate).finally(() => {
+                        setTimeout(() => {
+                            refreshBtn.classList.remove('refreshing');
+                        }, 500);
+                    });
+                }
+            });
+
+            // Allow Enter key on date inputs
+            [startDateInput, endDateInput].forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        loadBtn.click();
+                    }
+                });
+            });
+
+            // Update current dates when inputs change
+            startDateInput.addEventListener('change', function() {
+                if (startDateInput.value) {
+                    currentStartDate = startDateInput.value;
+                }
+            });
+
+            endDateInput.addEventListener('change', function() {
+                if (endDateInput.value) {
+                    currentEndDate = endDateInput.value;
+                }
+            });
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (accountsRefreshInterval) {
+                clearInterval(accountsRefreshInterval);
+            }
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+    </script>
+</body>
+</html>
+

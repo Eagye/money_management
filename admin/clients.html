@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Clients by Agent - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .agent-list {
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        .agent-list-header {
+            background: rgba(37, 99, 235, 0.08);
+            padding: 12px 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .agent-list-header h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0;
+        }
+        .agent-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .agent-row:last-child {
+            border-bottom: none;
+        }
+        .agent-row:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .agent-row:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .agent-row.active {
+            background: rgba(37, 99, 235, 0.12);
+            border-left: 4px solid var(--primary-color);
+        }
+        .agent-name {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        .agent-row:hover .agent-name {
+            color: var(--primary-hover);
+        }
+        .agent-row.active .agent-name {
+            color: var(--primary-hover);
+        }
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .agent-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: rgba(37, 99, 235, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+        }
+        .agent-row.active .agent-count {
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--primary-color);
+        }
+        .clients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-top: 24px;
+        }
+        .clients-table thead {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .clients-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .clients-table td {
+            padding: 14px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            vertical-align: middle;
+        }
+        .clients-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .clients-table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .clients-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .edit-btn {
+            padding: 6px 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .edit-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .edit-dialog-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .edit-dialog-form label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .edit-dialog-form input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+        .edit-dialog-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .no-clients {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .no-clients-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .search-container {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            font-size: 18px;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+        .search-clear {
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .search-clear:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .search-clear:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #closeClientsTableBtn {
+            background: var(--danger-color) !important;
+        }
+        #closeClientsTableBtn:hover {
+            background: var(--danger-hover) !important;
+        }
+        .search-results-info {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .agent-row.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; display: inline-block;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">All Clients by Agent</h1>
+                    <p class="page-subtitle">Click on an agent name to view their clients</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Search Container -->
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Search by agent name, client name, phone number, or client ID..."
+                        autocomplete="off"
+                    />
+                    <button id="clearSearchBtn" class="search-clear" disabled>Clear</button>
+                </div>
+                <div id="searchResultsInfo" class="search-results-info" style="display: none;"></div>
+            </div>
+
+            <!-- Agents List -->
+            <div class="agent-list">
+                <div class="agent-list-header">
+                    <h2>Select an Agent to View Clients</h2>
+                </div>
+                <div id="agentsList">
+                    <div class="loading-state" style="padding: 40px; text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading agents...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clients Table -->
+            <div id="clientsTableContainer" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">
+                        Clients for <span id="selectedAgentName"></span>
+                    </h2>
+                    <button id="closeClientsTableBtn" class="search-clear" style="padding: 8px 16px; background: var(--danger-color);">
+                        Close
+                    </button>
+                </div>
+                <table class="clients-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Gender</th>
+                            <th>Rate</th>
+                            <th>Balance</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="noClientsMessage" class="no-clients" style="display: none;">
+                <div class="no-clients-icon">👥</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                    No Clients Found
+                </div>
+                <div>This agent has no registered clients.</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script src="/dialog.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        let allClients = [];
+        let clientsByAgent = {};
+        let filteredAgents = [];
+        let currentSearchTerm = '';
+
+        // Load all clients and group by agent
+        async function loadClients() {
+            const agentsListContainer = document.getElementById('agentsList');
+            agentsListContainer.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div>Loading clients...</div></div>';
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getAllClients();
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load clients');
+                }
+
+                allClients = response.data || [];
+
+                if (allClients.length === 0) {
+                    agentsListContainer.innerHTML = `
+                        <div class="no-clients">
+                            <div class="no-clients-icon">👥</div>
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                                No Clients Found
+                            </div>
+                            <div>No clients have been registered yet.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Group clients by agent
+                clientsByAgent = {};
+                allClients.forEach(client => {
+                    const agentId = client.agent_id;
+                    const agentName = client.agent_name || 'Unknown Agent';
+                    
+                    if (!clientsByAgent[agentId]) {
+                        clientsByAgent[agentId] = {
+                            name: agentName,
+                            id: agentId,
+                            clients: []
+                        };
+                    }
+                    clientsByAgent[agentId].clients.push(client);
+                });
+
+                // Display agents as links
+                displayAgents();
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                agentsListContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Clients</div>
+                        <div>${error.message || 'Failed to load clients. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display agents as clickable rows
+        function displayAgents() {
+            const agentsListContainer = document.getElementById('agentsList');
+            const agents = Object.values(clientsByAgent).sort((a, b) => a.name.localeCompare(b.name));
+            
+            if (agents.length === 0) {
+                agentsListContainer.innerHTML = '<div class="no-clients" style="padding: 40px;"><div class="no-clients-icon">👥</div><div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Agents Found</div><div>No agents have registered clients yet.</div></div>';
+                return;
+            }
+
+            agentsListContainer.innerHTML = agents.map(agent => `
+                <div class="agent-row" data-agent-id="${agent.id}" onclick="showAgentClients(${agent.id});">
+                    <a href="#" class="agent-name" onclick="event.preventDefault(); showAgentClients(${agent.id}); return false;">
+                        ${agent.name}
+                    </a>
+                    <div class="agent-info">
+                        <span class="agent-count">${agent.clients.length} client${agent.clients.length !== 1 ? 's' : ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let currentSelectedAgentId = null;
+
+        // Show clients for a specific agent
+        function showAgentClients(agentId) {
+            const agent = clientsByAgent[agentId];
+            if (!agent) {
+                console.error('Agent not found:', agentId);
+                return;
+            }
+
+            currentSelectedAgentId = agentId;
+
+            // Update active row
+            document.querySelectorAll('.agent-row').forEach(row => {
+                row.classList.remove('active');
+            });
+            const activeRow = document.querySelector(`.agent-row[data-agent-id="${agentId}"]`);
+            if (activeRow) {
+                activeRow.classList.add('active');
+            }
+
+            // Show selected agent name
+            document.getElementById('selectedAgentName').textContent = agent.name;
+
+            // Hide no clients message
+            document.getElementById('noClientsMessage').style.display = 'none';
+
+            // Display clients in table (apply search filter if active)
+            renderClientsTable(agent.clients);
+        }
+
+        // Render clients table with optional filtering
+        function renderClientsTable(clients) {
+            const tableBody = document.getElementById('clientsTableBody');
+            const tableContainer = document.getElementById('clientsTableContainer');
+
+            if (clients.length === 0) {
+                tableContainer.style.display = 'none';
+                document.getElementById('noClientsMessage').style.display = 'block';
+                return;
+            }
+
+            // Apply search filter if there's a search term
+            let filteredClients = clients;
+            if (currentSearchTerm) {
+                const lowerSearchTerm = currentSearchTerm.toLowerCase();
+                filteredClients = clients.filter(client => {
+                    const nameMatch = (client.name || '').toLowerCase().includes(lowerSearchTerm);
+                    const phoneMatch = (client.phone || '').includes(lowerSearchTerm);
+                    const idMatch = String(client.id).includes(lowerSearchTerm);
+                    return nameMatch || phoneMatch || idMatch;
+                });
+            }
+
+            if (filteredClients.length === 0 && currentSearchTerm) {
+                tableContainer.style.display = 'block';
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            No clients match your search criteria
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableContainer.style.display = 'block';
+            tableBody.innerHTML = filteredClients.map(client => `
+                <tr>
+                    <td>${client.id}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">${client.name || 'Unknown'}</td>
+                    <td>${client.phone || 'N/A'}</td>
+                    <td>${client.gender || 'N/A'}</td>
+                    <td style="font-weight: 600;">${formatCurrency(client.rate || 0)}</td>
+                    <td style="font-weight: 700; color: var(--primary-color);">${formatCurrency(client.current_balance || 0)}</td>
+                    <td>${formatDate(client.created_at)}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editClient(${client.id}, '${(client.name || '').replace(/'/g, "\\'")}', '${client.phone || ''}')">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const searchResultsInfo = document.getElementById('searchResultsInfo');
+
+            if (!searchInput) return;
+
+            // Real-time search as user types
+            searchInput.addEventListener('input', function(e) {
+                currentSearchTerm = e.target.value.trim().toLowerCase();
+                clearSearchBtn.disabled = !currentSearchTerm;
+                
+                if (currentSearchTerm) {
+                    filterAgentsAndClients(currentSearchTerm);
+                } else {
+                    showAllAgents();
+                }
+            });
+
+            // Clear search
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                currentSearchTerm = '';
+                clearSearchBtn.disabled = true;
+                searchResultsInfo.style.display = 'none';
+                showAllAgents();
+                searchInput.focus();
+            });
+
+            // Allow Enter key to clear or focus
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    clearSearchBtn.click();
+                }
+            });
+        }
+
+        // Filter agents and clients based on search term
+        function filterAgentsAndClients(searchTerm) {
+            const searchResultsInfo = document.getElementById('searchResultsInfo');
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            let visibleCount = 0;
+            let matchingClientsCount = 0;
+
+            // Filter agents and their clients
+            Object.keys(clientsByAgent).forEach(agentId => {
+                const agent = clientsByAgent[agentId];
+                const agentRow = document.querySelector(`.agent-row[data-agent-id="${agentId}"]`);
+                
+                if (!agentRow) return;
+
+                // Check if agent name matches
+                const agentNameMatch = agent.name.toLowerCase().includes(lowerSearchTerm);
+                
+                // Check if any client matches
+                const matchingClients = agent.clients.filter(client => {
+                    const nameMatch = (client.name || '').toLowerCase().includes(lowerSearchTerm);
+                    const phoneMatch = (client.phone || '').includes(lowerSearchTerm);
+                    const idMatch = String(client.id).includes(lowerSearchTerm);
+                    return nameMatch || phoneMatch || idMatch;
+                });
+
+                if (agentNameMatch || matchingClients.length > 0) {
+                    agentRow.classList.remove('hidden');
+                    visibleCount++;
+                    matchingClientsCount += matchingClients.length;
+                } else {
+                    agentRow.classList.add('hidden');
+                }
+            });
+
+            // Update search results info
+            if (visibleCount > 0) {
+                searchResultsInfo.style.display = 'block';
+                searchResultsInfo.textContent = `Found ${visibleCount} agent${visibleCount !== 1 ? 's' : ''} with ${matchingClientsCount} matching client${matchingClientsCount !== 1 ? 's' : ''}`;
+            } else {
+                searchResultsInfo.style.display = 'block';
+                searchResultsInfo.textContent = 'No agents or clients found matching your search';
+            }
+
+            // If an agent is currently selected, re-render their clients table with search filter
+            if (currentSelectedAgentId && clientsByAgent[currentSelectedAgentId]) {
+                renderClientsTable(clientsByAgent[currentSelectedAgentId].clients);
+            }
+        }
+
+        // Show all agents
+        function showAllAgents() {
+            document.querySelectorAll('.agent-row').forEach(row => {
+                row.classList.remove('hidden');
+            });
+        }
+
+        // Initialize page
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                loadClients();
+                setupSearch();
+                setupCloseButton();
+            });
+        } else {
+            loadClients();
+            setupSearch();
+            setupCloseButton();
+        }
+
+        // Edit client function
+        function editClient(clientId, currentName, currentPhone) {
+            // Create edit dialog
+            const dialogHTML = `
+                <div class="edit-dialog-form">
+                    <div>
+                        <label for="editClientName">Client Name</label>
+                        <input 
+                            type="text" 
+                            id="editClientName" 
+                            value="${(currentName || '').replace(/"/g, '&quot;')}" 
+                            placeholder="Enter client name"
+                            required
+                            minlength="2"
+                        />
+                    </div>
+                    <div>
+                        <label for="editClientPhone">Phone Number</label>
+                        <input 
+                            type="text" 
+                            id="editClientPhone" 
+                            value="${currentPhone || ''}" 
+                            placeholder="Enter 10-digit phone number"
+                            required
+                            pattern="[0-9]{10}"
+                            maxlength="10"
+                        />
+                    </div>
+                </div>
+            `;
+
+            Dialog.show({
+                title: 'Edit Client Information',
+                message: dialogHTML,
+                type: 'info',
+                showCancel: true,
+                confirmText: 'Save Changes',
+                cancelText: 'Cancel',
+                onConfirm: async () => {
+                    const nameInput = document.getElementById('editClientName');
+                    const phoneInput = document.getElementById('editClientPhone');
+                    
+                    const newName = nameInput?.value.trim();
+                    const newPhone = phoneInput?.value.trim().replace(/\D/g, '');
+
+                    if (!newName || newName.length < 2) {
+                        Dialog.error('Name must be at least 2 characters', 'Validation Error');
+                        return;
+                    }
+
+                    if (!newPhone || newPhone.length !== 10) {
+                        Dialog.error('Phone number must contain exactly 10 digits', 'Validation Error');
+                        return;
+                    }
+
+                    try {
+                        if (typeof AdminAPI === 'undefined') {
+                            throw new Error('Admin API not loaded');
+                        }
+
+                        const response = await AdminAPI.updateClient(clientId, newName, newPhone);
+                        
+                        if (response && response.success) {
+                            Dialog.success('Client information updated successfully!', 'Success');
+                            
+                            // Reload clients to reflect changes
+                            await loadClients();
+                            
+                            // If an agent was selected, show their clients again
+                            if (currentSelectedAgentId) {
+                                showAgentClients(currentSelectedAgentId);
+                            }
+                        } else {
+                            throw new Error(response?.error || 'Failed to update client');
+                        }
+                    } catch (error) {
+                        console.error('Error updating client:', error);
+                        Dialog.error(error.message || 'Failed to update client information. Please try again.', 'Update Error');
+                    }
+                }
+            });
+
+            // Format phone input to only allow digits
+            setTimeout(() => {
+                const phoneInput = document.getElementById('editClientPhone');
+                if (phoneInput) {
+                    phoneInput.addEventListener('input', function(e) {
+                        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    });
+                }
+            }, 100);
+        }
+
+        // Close clients table
+        function setupCloseButton() {
+            const closeBtn = document.getElementById('closeClientsTableBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    const tableContainer = document.getElementById('clientsTableContainer');
+                    if (tableContainer) {
+                        tableContainer.style.display = 'none';
+                    }
+                    
+                    // Remove active state from agent row
+                    document.querySelectorAll('.agent-row').forEach(row => {
+                        row.classList.remove('active');
+                    });
+                    
+                    // Clear selected agent
+                    currentSelectedAgentId = null;
+                });
+            }
+        }
+
+        // Make functions globally available
+        window.showAgentClients = showAgentClients;
+        window.editClient = editClient;
+    </script>
+</body>
+</html>
+

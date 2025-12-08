@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day View - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .day-view-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .day-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .day-view-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .day-view-title::before {
+            content: '📅';
+            font-size: 28px;
+        }
+
+        .date-selector-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .date-selector-section label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .date-selector-section input[type="date"] {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        .date-selector-section input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .date-selector-section input[type="date"]:hover {
+            border-color: var(--primary-color);
+        }
+
+        #loadDateBtn {
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+
+        .quick-date-nav {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-date-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-secondary);
+        }
+
+        .quick-date-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .quick-date-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .day-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--surface) 0%, #f8fafc 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .summary-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .summary-card:nth-child(1)::before {
+            background: linear-gradient(90deg, #2563eb, #3b82f6);
+        }
+
+        .summary-card:nth-child(2)::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .summary-card:nth-child(3)::before {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        }
+
+        .summary-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            display: block;
+            animation: bounceIn 0.6s ease;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .summary-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:nth-child(2) .summary-value {
+            color: var(--success-color);
+        }
+
+        .summary-card:nth-child(3) .summary-value {
+            color: #8b5cf6;
+        }
+
+        .transactions-list {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .transactions-header {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .transaction-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            align-items: center;
+            transition: all 0.2s ease;
+            animation: slideIn 0.3s ease;
+            animation-fill-mode: both;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .transaction-item:nth-child(1) { animation-delay: 0.05s; }
+        .transaction-item:nth-child(2) { animation-delay: 0.1s; }
+        .transaction-item:nth-child(3) { animation-delay: 0.15s; }
+        .transaction-item:nth-child(4) { animation-delay: 0.2s; }
+        .transaction-item:nth-child(5) { animation-delay: 0.25s; }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-item:hover {
+            background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+            transform: translateX(4px);
+            box-shadow: -4px 0 0 0 var(--primary-color);
+        }
+
+        .transaction-client {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .transaction-phone {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .transaction-phone::before {
+            content: '📞';
+            font-size: 12px;
+        }
+
+        .transaction-amount {
+            font-weight: 700;
+            color: var(--success-color);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .transaction-amount::before {
+            content: '₵';
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .transaction-type {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: capitalize;
+            padding: 4px 10px;
+            background: var(--background);
+            border-radius: 12px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .transaction-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .transaction-time::before {
+            content: '🕐';
+            font-size: 12px;
+        }
+
+        .transaction-notes {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: 4px;
+            padding: 4px 8px;
+            background: var(--background);
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-state-message {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-state-submessage {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .transactions-header,
+            .transaction-item {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .transactions-header {
+                display: none;
+            }
+
+            .transaction-item {
+                padding: 16px;
+                border-left: 4px solid var(--primary-color);
+            }
+
+            .transaction-client {
+                font-weight: 700;
+                font-size: 16px;
+            }
+
+            .day-view-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .date-selector-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="day-view-container">
+            <!-- Header -->
+            <header class="header">
+                <h1 class="title" id="agentNameTitle">Lucky Susu Ent — <span id="agentName">Loading...</span></h1>
+                <div class="header-buttons">
+                    <button class="btn btn-secondary" id="backBtn">Back</button>
+                    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+                </div>
+            </header>
+
+            <!-- Day View Header -->
+            <div class="day-view-header">
+                <h2 class="day-view-title" id="dayViewTitle">Transactions for Today</h2>
+                <div class="date-selector-section">
+                    <label for="dateSelector">Select Date:</label>
+                    <input type="date" id="dateSelector" class="date-input">
+                    <button class="btn btn-primary" id="loadDateBtn">Load Transactions</button>
+                    <div class="quick-date-nav">
+                        <button class="quick-date-btn" id="todayBtn">Today</button>
+                        <button class="quick-date-btn" id="yesterdayBtn">Yesterday</button>
+                        <button class="quick-date-btn" id="weekAgoBtn">Week Ago</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="day-summary">
+                <div class="summary-card">
+                    <span class="summary-icon">📊</span>
+                    <div class="summary-label">Total Transactions</div>
+                    <div class="summary-value" id="totalTransactions">0</div>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-icon">💰</span>
+                    <div class="summary-label">Total Amount</div>
+                    <div class="summary-value" id="totalAmount">₵0.00</div>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-icon">👥</span>
+                    <div class="summary-label">Unique Clients</div>
+                    <div class="summary-value" id="uniqueClients">0</div>
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="transactions-list">
+                <div class="transactions-header">
+                    <div>Client</div>
+                    <div>Amount</div>
+                    <div>Type</div>
+                    <div>Time</div>
+                    <div>Notes</div>
+                </div>
+                <div id="transactionsContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Loading transactions...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script src="auth-check.js"></script>
+    <script src="dialog.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return `₵${parseFloat(amount || 0).toFixed(2)}`;
+        }
+
+        // Format phone number
+        function formatPhone(phone) {
+            if (!phone) return '';
+            const digits = phone.replace(/\D/g, '');
+            if (digits.length === 10) {
+                return `${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}`;
+            }
+            return phone;
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Format time for display
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+
+        // Get date from URL parameter or use today
+        function getSelectedDate() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            if (dateParam) {
+                return dateParam;
+            }
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Load transactions for a specific date
+        async function loadTransactions(date) {
+            const container = document.getElementById('transactionsContainer');
+            container.innerHTML = '<div class="loading-state">Loading transactions...</div>';
+
+            try {
+                console.log('Loading transactions for date:', date);
+                const response = await TransactionAPI.getByDate(date);
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load transactions');
+                }
+
+                const transactions = response.data || [];
+                console.log('Loaded', transactions.length, 'transactions');
+
+                // Update title
+                const titleElement = document.getElementById('dayViewTitle');
+                const formattedDate = formatDate(date);
+                titleElement.textContent = `Transactions for ${formattedDate}`;
+
+                // Update summary
+                updateSummary(transactions);
+
+                // Render transactions
+                if (transactions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div class="empty-state-message">No transactions found</div>
+                            <div class="empty-state-submessage">There are no transactions recorded for ${formattedDate}</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = transactions.map(transaction => `
+                        <div class="transaction-item">
+                            <div>
+                                <div class="transaction-client">${transaction.client_name || 'Unknown Client'}</div>
+                                <div class="transaction-phone">${formatPhone(transaction.client_phone || '')}</div>
+                            </div>
+                            <div class="transaction-amount">${formatCurrency(transaction.amount)}</div>
+                            <div class="transaction-type">${transaction.transaction_type || 'deposit'}</div>
+                            <div class="transaction-time">${formatTime(transaction.created_at || transaction.transaction_date)}</div>
+                            <div>
+                                ${transaction.notes ? `<div class="transaction-notes">${transaction.notes}</div>` : '<span style="color: var(--text-secondary); font-size: 11px;">-</span>'}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-message">Error loading transactions</div>
+                        <div class="empty-state-submessage">${error.message || 'Please try again'}</div>
+                    </div>
+                `;
+                if (typeof Dialog !== 'undefined') {
+                    Dialog.error(error.message || 'Failed to load transactions. Please try again.', 'Error');
+                }
+            }
+        }
+
+        // Animate number counting
+        function animateValue(element, start, end, duration, prefix = '', suffix = '') {
+            const range = end - start;
+            const increment = end > start ? 1 : -1;
+            const stepTime = Math.abs(Math.floor(duration / range));
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = prefix + current + suffix;
+            }, stepTime);
+        }
+
+        // Update summary statistics with animation
+        function updateSummary(transactions) {
+            const totalTransactions = transactions.length;
+            const totalAmount = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+            const uniqueClients = new Set(transactions.map(t => t.client_id)).size;
+
+            const totalTransactionsEl = document.getElementById('totalTransactions');
+            const totalAmountEl = document.getElementById('totalAmount');
+            const uniqueClientsEl = document.getElementById('uniqueClients');
+
+            // Animate counting
+            animateValue(totalTransactionsEl, 0, totalTransactions, 500);
+            animateValue(uniqueClientsEl, 0, uniqueClients, 500);
+            
+            // Animate amount
+            let currentAmount = 0;
+            const amountStep = totalAmount / 30;
+            const amountTimer = setInterval(() => {
+                currentAmount += amountStep;
+                if (currentAmount >= totalAmount) {
+                    currentAmount = totalAmount;
+                    clearInterval(amountTimer);
+                }
+                totalAmountEl.textContent = formatCurrency(currentAmount);
+            }, 20);
+        }
+
+        // Initialize page
+        // Load and display agent name
+        function loadAgentName() {
+            try {
+                const userData = localStorage.getItem('user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    const agentNameElement = document.getElementById('agentName');
+                    if (agentNameElement && user.name) {
+                        agentNameElement.textContent = user.name;
+                    } else if (agentNameElement) {
+                        agentNameElement.textContent = 'Agent';
+                    }
+                } else {
+                    const agentNameElement = document.getElementById('agentName');
+                    if (agentNameElement) {
+                        agentNameElement.textContent = 'Guest';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading agent name:', error);
+                const agentNameElement = document.getElementById('agentName');
+                if (agentNameElement) {
+                    agentNameElement.textContent = 'Agent';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load agent name
+            loadAgentName();
+            // Get selected date from URL or use today
+            const selectedDate = getSelectedDate();
+            const dateSelector = document.getElementById('dateSelector');
+            dateSelector.value = selectedDate;
+
+            // Load transactions for the selected date
+            loadTransactions(selectedDate);
+
+            // Back button
+            const backBtn = document.getElementById('backBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', function() {
+                    window.location.href = 'registered_clients.html';
+                });
+            }
+
+            // Logout button
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    // Clear user session and token
+                    if (typeof clearToken !== 'undefined') {
+                        clearToken();
+                    } else {
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('user');
+                    }
+                    // Redirect to login page
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Date selector change
+            const loadDateBtn = document.getElementById('loadDateBtn');
+            if (loadDateBtn) {
+                loadDateBtn.addEventListener('click', function() {
+                    const selectedDate = dateSelector.value;
+                    if (selectedDate) {
+                        // Update URL without reload
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('date', selectedDate);
+                        window.history.pushState({}, '', newUrl);
+                        loadTransactions(selectedDate);
+                    }
+                });
+            }
+
+            // Allow Enter key on date selector
+            if (dateSelector) {
+                dateSelector.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        loadDateBtn.click();
+                    }
+                });
+            }
+
+            // Quick date navigation buttons
+            const todayBtn = document.getElementById('todayBtn');
+            const yesterdayBtn = document.getElementById('yesterdayBtn');
+            const weekAgoBtn = document.getElementById('weekAgoBtn');
+
+            function setQuickDate(daysOffset, activeButton) {
+                const date = new Date();
+                date.setDate(date.getDate() + daysOffset);
+                const dateString = date.toISOString().split('T')[0];
+                dateSelector.value = dateString;
+                
+                // Update URL and load
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('date', dateString);
+                window.history.pushState({}, '', newUrl);
+                loadTransactions(dateString);
+                
+                // Update active button
+                document.querySelectorAll('.quick-date-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                if (activeButton) {
+                    activeButton.classList.add('active');
+                }
+            }
+
+            if (todayBtn) {
+                todayBtn.addEventListener('click', function(e) {
+                    setQuickDate(0, e.target);
+                });
+            }
+
+            if (yesterdayBtn) {
+                yesterdayBtn.addEventListener('click', function(e) {
+                    setQuickDate(-1, e.target);
+                });
+            }
+
+            if (weekAgoBtn) {
+                weekAgoBtn.addEventListener('click', function(e) {
+                    setQuickDate(-7, e.target);
+                });
+            }
+
+            // Set active button based on current date
+            const currentDate = new Date(selectedDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            
+            currentDate.setHours(0, 0, 0, 0);
+            
+            if (currentDate.getTime() === today.getTime()) {
+                todayBtn?.classList.add('active');
+            } else if (currentDate.getTime() === yesterday.getTime()) {
+                yesterdayBtn?.classList.add('active');
+            } else if (currentDate.getTime() === weekAgo.getTime()) {
+                weekAgoBtn?.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
+

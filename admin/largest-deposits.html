@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Largest Deposits by Agent - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .date-selector-container {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+        .date-selector-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .date-selector-wrapper label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .date-selector-wrapper input[type="date"] {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+        .date-selector-wrapper input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .load-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .load-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .deposits-container {
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        .deposits-header {
+            background: rgba(37, 99, 235, 0.08);
+            padding: 12px 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .deposits-header h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0;
+        }
+        .ultimate-largest {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ultimate-largest-amount {
+            font-size: 16px;
+        }
+        .deposits-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .deposit-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            transition: all 0.2s ease;
+        }
+        .deposit-row:last-child {
+            border-bottom: none;
+        }
+        .deposit-row:nth-child(even) {
+            background: rgba(248, 250, 252, 0.6);
+        }
+        .deposit-row:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .deposit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        .deposit-agent {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .deposit-client {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .deposit-amount {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-color);
+            min-width: 120px;
+            text-align: right;
+        }
+        .deposits-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .deposits-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .deposits-list::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 999px;
+        }
+        .no-deposits {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .no-deposits-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; display: inline-block;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Largest Deposits by Agent</h1>
+                    <p class="page-subtitle">View the largest deposit from each agent for a selected date</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">
+                    <span style="font-size: 16px; display: inline-block;">←</span>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+
+            <!-- Date Selector -->
+            <div class="date-selector-container">
+                <div class="date-selector-wrapper">
+                    <label for="dateSelector">Select Date:</label>
+                    <input type="date" id="dateSelector" class="date-input">
+                    <button id="loadBtn" class="load-btn">Load Deposits</button>
+                </div>
+            </div>
+
+            <!-- Deposits List -->
+            <div id="depositsContainer" class="deposits-container" style="display: none;">
+                <div class="deposits-header">
+                    <h2 id="depositsHeader">Largest Deposits by Agent</h2>
+                    <div id="ultimateLargest" class="ultimate-largest" style="display: none;">
+                        <span>🏆 Ultimate Largest:</span>
+                        <span class="ultimate-largest-amount" id="ultimateLargestAmount">₵0.00</span>
+                    </div>
+                </div>
+                <div id="depositsList" class="deposits-list">
+                    <div class="loading-state" style="padding: 40px; text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading deposits...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="noDepositsMessage" class="no-deposits" style="display: none;">
+                <div class="no-deposits-icon">💰</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                    No Deposits Found
+                </div>
+                <div>No deposits were made on this date.</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced authentication check for admin pages - runs IMMEDIATELY
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+            
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+            
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Format date for display
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Load largest deposits for selected date
+        async function loadLargestDeposits(date) {
+            const depositsContainer = document.getElementById('depositsContainer');
+            const depositsList = document.getElementById('depositsList');
+            const noDepositsMessage = document.getElementById('noDepositsMessage');
+            const depositsHeader = document.getElementById('depositsHeader');
+            const ultimateLargest = document.getElementById('ultimateLargest');
+            const ultimateLargestAmount = document.getElementById('ultimateLargestAmount');
+
+            depositsContainer.style.display = 'block';
+            noDepositsMessage.style.display = 'none';
+            depositsList.innerHTML = '<div class="loading-state" style="padding: 40px; text-align: center;"><div class="loading-spinner"></div><div>Loading deposits...</div></div>';
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getLargestDepositsByAgent(date);
+                
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load deposits');
+                }
+
+                const deposits = response.data || [];
+
+                if (deposits.length === 0) {
+                    depositsContainer.style.display = 'none';
+                    noDepositsMessage.style.display = 'block';
+                    return;
+                }
+
+                // Update header with date
+                depositsHeader.textContent = `Largest Deposits by Agent - ${formatDateDisplay(date)}`;
+
+                // Find ultimate largest deposit
+                const ultimate = deposits.reduce((max, deposit) => {
+                    return parseFloat(deposit.amount) > parseFloat(max.amount) ? deposit : max;
+                }, deposits[0]);
+
+                if (ultimate) {
+                    ultimateLargest.style.display = 'flex';
+                    ultimateLargestAmount.textContent = formatCurrency(ultimate.amount);
+                } else {
+                    ultimateLargest.style.display = 'none';
+                }
+
+                // Display deposits
+                depositsList.innerHTML = deposits.map(deposit => `
+                    <div class="deposit-row">
+                        <div class="deposit-info">
+                            <div class="deposit-agent">${deposit.agent_name || 'Unknown Agent'}</div>
+                            <div class="deposit-client">${deposit.client_name || 'Unknown Client'} · ${deposit.client_phone || 'N/A'}</div>
+                        </div>
+                        <div class="deposit-amount">${formatCurrency(deposit.amount || 0)}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading deposits:', error);
+                depositsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Error Loading Deposits</div>
+                        <div>${error.message || 'Failed to load deposits. Please try again.'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize page
+        function initializePage() {
+            const dateSelector = document.getElementById('dateSelector');
+            const loadBtn = document.getElementById('loadBtn');
+
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            dateSelector.value = today;
+
+            // Load deposits for today by default
+            loadLargestDeposits(today);
+
+            // Load button click
+            loadBtn.addEventListener('click', function() {
+                const selectedDate = dateSelector.value;
+                if (selectedDate) {
+                    loadLargestDeposits(selectedDate);
+                }
+            });
+
+            // Allow Enter key on date selector
+            dateSelector.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loadBtn.click();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+    </script>
+</body>
+</html>
+

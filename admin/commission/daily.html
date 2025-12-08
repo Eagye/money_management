@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Commission - Lucky Susu Ent Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <style>
+        .commission-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .commission-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            letter-spacing: 0.7px;
+            background: rgba(59, 130, 246, 0.04);
+        }
+
+        .commission-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        .commission-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .commission-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .transactions-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            overflow: hidden;
+        }
+
+        .empty-state {
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
+                        <span style="font-size: 16px; display: inline-block; transform: translateX(0); transition: transform 0.3s ease;">←</span>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="admin-main">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Daily Commission</h1>
+                    <p class="page-subtitle">
+                        Review all commission deductions (31st box) that occurred alongside withdrawals for a specific day.
+                    </p>
+                </div>
+                <div class="date-selector">
+                    <label for="commissionDate">Select Date</label>
+                    <input type="date" id="commissionDate">
+                </div>
+            </div>
+
+            <div class="summary-card" id="summaryCard" style="display:none;">
+                <div class="summary-label">Total Commission</div>
+                <div class="summary-value" id="totalCommission">₵0.00</div>
+                <div class="summary-date" id="summaryDate">--</div>
+            </div>
+
+            <div id="commissionTableContainer" class="transactions-container">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <div>Loading commission data...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            function checkAdminAuth() {
+                const userData = localStorage.getItem('user');
+                if (!userData) {
+                    redirectToLogin();
+                    return false;
+                }
+                try {
+                    const user = JSON.parse(userData);
+                    if (!user.token) {
+                        redirectToLogin();
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.error('Auth check error:', e);
+                    redirectToLogin();
+                    return false;
+                }
+            }
+
+            function redirectToLogin() {
+                localStorage.removeItem('user');
+                window.location.href = '/index.html';
+            }
+
+            if (!checkAdminAuth()) {
+                if (document.body) {
+                    document.body.style.display = 'none';
+                }
+                document.write('<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (!checkAdminAuth()) {
+                        document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Please login to access admin dashboard</h2><p>Redirecting...</p></div>';
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="/api-client.js"></script>
+    <script>
+        const summaryCard = document.getElementById('summaryCard');
+        const totalCommissionEl = document.getElementById('totalCommission');
+        const summaryDateEl = document.getElementById('summaryDate');
+        const tableContainer = document.getElementById('commissionTableContainer');
+        const datePicker = document.getElementById('commissionDate');
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-GH', {
+                style: 'currency',
+                currency: 'GHS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
+
+        function formatPhone(phone) {
+            if (!phone) return 'N/A';
+            const digits = phone.replace(/\D/g, '');
+            if (digits.length === 10) {
+                return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+            }
+            return phone;
+        }
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>"']/g, (char) => {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return map[char] || char;
+            });
+        }
+
+        async function loadDailyCommission(date, showLoading = true) {
+            if (showLoading) {
+                tableContainer.innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading commission data...</div>
+                    </div>
+                `;
+            }
+
+            try {
+                if (typeof AdminAPI === 'undefined') {
+                    throw new Error('Admin API not loaded. Please refresh the page.');
+                }
+
+                const response = await AdminAPI.getDailyCommission(date);
+                if (!response || !response.success) {
+                    throw new Error(response?.error || 'Failed to load commission data');
+                }
+
+                const data = response.data || {};
+                const commissions = data.commissions || [];
+                const totalAmount = data.total_amount || 0;
+
+                totalCommissionEl.textContent = formatCurrency(totalAmount);
+                summaryDateEl.textContent = formatDateDisplay(date);
+                summaryCard.style.display = 'block';
+
+                if (commissions.length === 0) {
+                    tableContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-title">No Commissions Recorded</div>
+                            <div class="empty-state-text">No commission deductions were made on ${formatDateDisplay(date)}.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+            let tableHTML = `
+                <table class="commission-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Client</th>
+                            <th>Agent</th>
+                            <th>Withdrawal</th>
+                            <th>Commission</th>
+                            <th>Total Deduction</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+                commissions.forEach((entry) => {
+                    const commissionAmount = parseFloat(entry.commission_amount) || 0;
+                    const withdrawalAmount = parseFloat(entry.withdrawal_amount) || 0;
+                    const totalDeduction = commissionAmount + withdrawalAmount;
+                    tableHTML += `
+                        <tr>
+                            <td>
+                                <div style="font-weight:600; color:var(--text-primary);">${formatTime(entry.created_at)}</div>
+                                <div style="font-size:12px; color:var(--text-secondary);">${formatDateDisplay(entry.transaction_date)}</div>
+                            </td>
+                            <td>
+                                <div class="client-name">${escapeHtml(entry.client_name || 'Unknown')}</div>
+                                <div class="client-phone">${formatPhone(entry.client_phone)}</div>
+                                <div style="font-size:12px; color:var(--text-secondary);">Rate: ${formatCurrency(entry.client_rate || commissionAmount)}</div>
+                            </td>
+                            <td>
+                                <div>${escapeHtml(entry.agent_name || 'Unknown')}</div>
+                            </td>
+                            <td>${withdrawalAmount ? formatCurrency(withdrawalAmount) : '--'}</td>
+                            <td>${formatCurrency(commissionAmount)}</td>
+                            <td>${formatCurrency(totalDeduction)}</td>
+                            <td style="max-width:220px;">${escapeHtml(entry.commission_notes || 'Auto commission (31st box).')}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `
+                    </tbody>
+                </table>
+                `;
+
+                tableContainer.innerHTML = tableHTML;
+            } catch (error) {
+                console.error('Error loading daily commission:', error);
+                tableContainer.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">⚠️</div>
+                        <div class="error-state-title">Error Loading Commission Data</div>
+                        <div class="error-state-text">${escapeHtml(error?.message || 'Please try again later.')}</div>
+                    </div>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            datePicker.value = today;
+            loadDailyCommission(today);
+
+            datePicker.addEventListener('change', (event) => {
+                if (event.target.value) {
+                    loadDailyCommission(event.target.value);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

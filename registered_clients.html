@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Clients - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title" id="agentNameTitle">Lucky Susu Ent — <span id="agentName">Loading...</span></h1>
+            <div class="header-buttons">
+                <button class="btn btn-primary" id="registerBtn">Register New</button>
+                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search by name or phone" class="search-input" autocomplete="off">
+                <button class="btn btn-primary" id="searchBtn">Search</button>
+                <button class="btn btn-success" id="refreshBtn">Refresh</button>
+            </div>
+            <div class="date-section">
+                <label for="datePicker" class="date-label">View day:</label>
+                <input type="date" id="datePicker" class="date-input">
+                <button type="button" class="btn btn-primary" id="dayViewBtn" onclick="const d=document.getElementById('datePicker');if(d&&d.value){window.location.href='day_view.html?date='+d.value;}else{alert('Please select a date first');}return false;">Open Day View</button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL CLIENTS</div>
+                <div class="stat-value" id="totalClients">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">FEMALE</div>
+                <div class="stat-value" id="femaleCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">MALE</div>
+                <div class="stat-value" id="maleCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">OTHER / UNKNOWN</div>
+                <div class="stat-value" id="otherCount">0</div>
+            </div>
+        </div>
+
+        <!-- Clients List -->
+        <div class="clients-container" id="clientsContainer">
+            <div id="loadingMessage" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                Loading clients...
+            </div>
+            <div id="emptyMessage" style="text-align: center; padding: 40px; color: var(--text-secondary); display: none;">
+                No clients registered yet. Click "Register New" to add your first client.
+            </div>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script src="auth-check.js"></script>
+    <script src="dialog.js"></script>
+    <script src="deposit-dialog.js"></script>
+    <script src="view-client-dialog.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

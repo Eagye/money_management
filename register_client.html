@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register New Client - Lucky Susu Ent</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .form-container {
+            max-width: 550px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .form-group:focus-within .form-label {
+            color: var(--primary-color);
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            background: var(--surface);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-input:hover,
+        .form-select:hover {
+            border-color: #cbd5e1;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .form-input.valid {
+            border-color: var(--success-color);
+        }
+
+        .form-input.invalid {
+            border-color: var(--danger-color);
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 11px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-group.has-error .error-message {
+            display: block;
+        }
+
+        .form-group.has-error .form-input {
+            border-color: var(--danger-color);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .form-actions .btn {
+            flex: 1;
+            font-size: 13px;
+            padding: 10px 16px;
+        }
+
+        .form-actions .btn:active {
+            transform: scale(0.98);
+        }
+
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-bottom: 16px;
+            display: none;
+            text-align: center;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .form-group {
+            animation: fadeInUp 0.3s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .form-group:nth-child(3) { animation-delay: 0.3s; }
+        .form-group:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Register New Client</h1>
+            <div class="header-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='registered_clients.html'">Back</button>
+            </div>
+        </header>
+
+        <div class="form-container">
+            <h2 class="form-title">Client Information</h2>
+            <form id="registerForm" autocomplete="off">
+                <div class="form-group">
+                    <label for="clientName" class="form-label">Full Name *</label>
+                    <input type="text" id="clientName" class="form-input" placeholder="Enter full name" autocomplete="off" required>
+                    <span class="error-message">Please enter a valid name</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="clientPhone" class="form-label">Phone Number *</label>
+                    <input type="tel" id="clientPhone" class="form-input" placeholder="e.g., 024-406-7364" autocomplete="off" required>
+                    <span class="error-message">Please enter a valid phone number</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="clientGender" class="form-label">Gender *</label>
+                    <select id="clientGender" class="form-select" autocomplete="off" required>
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <span class="error-message">Please select a gender</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="clientRate" class="form-label">Rate (₵) *</label>
+                    <input type="number" id="clientRate" class="form-input" placeholder="Minimum: ₵5.00" step="0.01" min="5" autocomplete="off" required>
+                    <span class="error-message">Rate must be at least ₵5.00</span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='registered_clients.html'">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script src="auth-check.js"></script>
+    <script src="dialog.js"></script>
+    <script>
+        // Clear form on page load
+        window.addEventListener('load', function() {
+            const form = document.getElementById('registerForm');
+            if (form) {
+                form.reset();
+            }
+        });
+
+        // Real-time validation
+        const form = document.getElementById('registerForm');
+        const inputs = form.querySelectorAll('input, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+            
+            input.addEventListener('input', function() {
+                if (this.classList.contains('invalid')) {
+                    validateField(this);
+                }
+            });
+        });
+
+        function validateField(field) {
+            const formGroup = field.closest('.form-group');
+            let isValid = true;
+            let errorMessage = '';
+
+            // Remove previous validation classes
+            field.classList.remove('valid', 'invalid');
+            formGroup.classList.remove('has-error');
+
+            // Validate based on field type
+            if (field.id === 'clientName') {
+                if (field.value.trim().length < 2) {
+                    isValid = false;
+                    errorMessage = 'Name must be at least 2 characters';
+                }
+            } else if (field.id === 'clientPhone') {
+                // Remove dashes and check for exactly 10 digits
+                const phoneDigits = field.value.replace(/\D/g, '');
+                if (phoneDigits.length !== 10) {
+                    isValid = false;
+                    errorMessage = 'Phone number must contain exactly 10 digits';
+                }
+            } else if (field.id === 'clientGender') {
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a gender';
+                }
+            } else if (field.id === 'clientRate') {
+                const rate = parseFloat(field.value);
+                if (isNaN(rate) || rate < 5) {
+                    isValid = false;
+                    errorMessage = 'Rate must be at least ₵5.00';
+                }
+            }
+
+            // Apply validation styling
+            if (field.value.trim() !== '') {
+                if (isValid) {
+                    field.classList.add('valid');
+                    field.classList.remove('invalid');
+                } else {
+                    field.classList.add('invalid');
+                    field.classList.remove('valid');
+                    formGroup.classList.add('has-error');
+                }
+            }
+        }
+
+        // Auto-format phone number (limit to 10 digits)
+        document.getElementById('clientPhone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            // Limit to 10 digits
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    value = value;
+                } else if (value.length <= 6) {
+                    value = value.slice(0, 3) + '-' + value.slice(3);
+                } else {
+                    value = value.slice(0, 3) + '-' + value.slice(3, 6) + '-' + value.slice(6, 10);
+                }
+                e.target.value = value;
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validate all fields
+            let isFormValid = true;
+            inputs.forEach(input => {
+                validateField(input);
+                if (input.classList.contains('invalid') || (input.required && !input.value.trim())) {
+                    isFormValid = false;
+                }
+            });
+
+            if (!isFormValid) {
+                const firstError = form.querySelector('.invalid, [required]:not(:valid)');
+                if (firstError) {
+                    firstError.focus();
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+            submitBtn.style.opacity = '0.7';
+            
+            try {
+                // Get phone number without dashes for storage
+                const phoneInput = document.getElementById('clientPhone').value.trim();
+                const phoneDigits = phoneInput.replace(/\D/g, '');
+                
+                const formData = {
+                    name: document.getElementById('clientName').value.trim(),
+                    phone: phoneDigits, // Store as digits only
+                    gender: document.getElementById('clientGender').value,
+                    rate: parseFloat(document.getElementById('clientRate').value)
+                };
+                
+                const response = await ClientAPI.create(formData);
+                
+                if (response.success) {
+                    // Clear form
+                    form.reset();
+                    // Clear all validation states
+                    inputs.forEach(input => {
+                        input.classList.remove('invalid', 'valid');
+                        const formGroup = input.closest('.form-group');
+                        if (formGroup) {
+                            formGroup.classList.remove('has-error');
+                        }
+                    });
+                    
+                    Dialog.success(
+                        'Client registered successfully!',
+                        'Registration Successful'
+                    );
+                    
+                    setTimeout(() => {
+                        window.location.href = 'registered_clients.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                const errorMsg = error.message || 'An error occurred while registering the client. Please try again.';
+                Dialog.error(errorMsg, 'Registration Failed');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+            }
+        });
+    </script>
+</body>
+</html>
+

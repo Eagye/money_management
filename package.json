@@ -1,0 +1,21 @@
+{
+  "name": "lucky-susu-ent",
+  "version": "1.0.0",
+  "description": "Money Management App - Lucky Susu Ent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.6",
+    "winston": "^3.18.3"
+  }
+}
