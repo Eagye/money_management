@@ -1,4 +1,4 @@
-const { Client, Transaction, User, AgentDailyStatus, CommissionCycle } = require('./database');
+const { Client, Transaction, User, AgentDailyStatus, CommissionCycle, Message } = require('./database');
 const url = require('url');
 const zlib = require('zlib');
 const { 
@@ -184,7 +184,9 @@ async function handleAPI(req, res) {
     const maxRequests = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100;
     
     // Stricter limits for auth endpoints (but more reasonable)
-    if (path.startsWith('/api/auth/')) {
+    if (path === '/api/webhooks/arkesel/delivery') {
+        // Delivery webhooks should not be throttled aggressively
+    } else if (path.startsWith('/api/auth/')) {
         if (!checkRateLimit(req, res, 900000, 20, 'auth')) {
             return;
         }
@@ -217,6 +219,58 @@ async function handleAPI(req, res) {
     }
 
     try {
+        // Arkesel delivery webhook (public endpoint with optional shared-secret verification)
+        if (path === '/api/webhooks/arkesel/delivery' && method === 'POST') {
+            const webhookSecret = process.env.ARKESEL_WEBHOOK_SECRET;
+            const providedSecret = req.headers['x-webhook-token'] || req.headers['x-arkesel-signature'];
+            if (webhookSecret && providedSecret !== webhookSecret) {
+                sendJSON(401, { success: false, error: 'Invalid webhook signature' });
+                return;
+            }
+
+            const body = await parseBody(req);
+            const payload = body?.data && typeof body.data === 'object' ? body.data : body;
+            const providerMessageId = payload?.id || payload?.message_id || payload?.sms_id;
+            const rawStatus = String(payload?.status || payload?.delivery_status || '').toLowerCase();
+
+            if (!providerMessageId) {
+                sendJSON(400, { success: false, error: 'Missing provider message id' });
+                return;
+            }
+
+            let normalizedStatus = rawStatus || 'sent';
+            if (normalizedStatus.includes('deliver')) {
+                normalizedStatus = 'delivered';
+            } else if (normalizedStatus.includes('fail') || normalizedStatus.includes('undeliver') || normalizedStatus.includes('reject')) {
+                normalizedStatus = 'failed';
+            } else if (['queued', 'processing', 'submitted', 'sent'].includes(normalizedStatus)) {
+                normalizedStatus = 'sent';
+            }
+
+            const deliveredAt = normalizedStatus === 'delivered'
+                ? (payload?.delivered_at || payload?.updated_at || new Date().toISOString())
+                : null;
+            const failedAt = normalizedStatus === 'failed'
+                ? (payload?.failed_at || payload?.updated_at || new Date().toISOString())
+                : null;
+
+            const updateResult = await Message.updateByProviderMessageId(providerMessageId, normalizedStatus, {
+                deliveredAt,
+                failedAt,
+                providerResponse: body
+            });
+
+            sendJSON(200, {
+                success: true,
+                data: {
+                    provider_message_id: providerMessageId,
+                    normalized_status: normalizedStatus,
+                    updated_messages: updateResult.updated
+                }
+            });
+            return;
+        }
+
         // Clients API - requires authentication
         if (path === '/api/clients' && method === 'GET') {
             requireAuth(req, res, async () => {
@@ -409,6 +463,14 @@ async function handleAPI(req, res) {
                         return;
                     }
 
+                    // Validate transaction type
+                    const effectiveTransactionType = transaction_type || 'deposit';
+                    if (!['deposit', 'withdrawal'].includes(effectiveTransactionType)) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'transaction_type must be either "deposit" or "withdrawal"' }));
+                        return;
+                    }
+
                     // Check if transaction date is a weekend (Saturday = 6, Sunday = 0)
                     const transactionDate = new Date(transaction_date);
                     const dayOfWeek = transactionDate.getDay();
@@ -439,22 +501,22 @@ async function handleAPI(req, res) {
                         client_id: parseInt(client_id),
                         agent_id: req.user.id,
                         amount: amountValue,
-                        transaction_type: transaction_type || 'deposit',
+                        transaction_type: effectiveTransactionType,
                         transaction_date,
                         notes: sanitizedNotes
                     });
 
                     await AgentDailyStatus.upsertPending(req.user.id, transaction_date);
 
-                    // Send message to client about the deposit
+                    // Send message to client about the transaction (deposit/withdrawal)
                     try {
                         // Get updated client info with new balance
                         const updatedClient = await Client.getById(parseInt(client_id), req.user.id);
-                        if (updatedClient && transaction_type === 'deposit') {
+                        if (updatedClient && ['deposit', 'withdrawal'].includes(effectiveTransactionType)) {
                             await sendTransactionMessage({
                                 clientId: parseInt(client_id),
                                 transactionId: transaction.id,
-                                transactionType: 'deposit',
+                                transactionType: effectiveTransactionType,
                                 amount: amountValue,
                                 clientName: updatedClient.name,
                                 phoneNumber: updatedClient.phone,
@@ -464,7 +526,7 @@ async function handleAPI(req, res) {
                         }
                     } catch (msgError) {
                         // Log error but don't fail the transaction
-                        logger.error('Failed to send deposit message', { 
+                        logger.error('Failed to send transaction message', { 
                             error: msgError.message, 
                             clientId: parseInt(client_id),
                             transactionId: transaction.id 

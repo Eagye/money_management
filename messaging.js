@@ -1,4 +1,5 @@
 const { Message } = require('./database');
+const logger = require('./logger');
 
 /**
  * Send a message to a client about a transaction
@@ -56,14 +57,14 @@ async function sendTransactionMessage(options) {
             status: 'pending'
         });
 
-        // In a production environment, you would integrate with an SMS service here
-        // For now, we'll mark it as sent (you can integrate with services like Twilio, AWS SNS, etc.)
-        // Example integration:
-        // await sendSMS(phoneNumber, messageText);
-        
-        // For now, we'll simulate sending and mark as sent
-        // TODO: Integrate with actual SMS service provider
-        await Message.updateStatus(message.id, 'sent');
+        const sendResult = await sendSMSWithDetails(phoneNumber, messageText);
+        const providerMessageId = extractArkeselMessageId(sendResult.data);
+        await Message.updateStatus(message.id, sendResult.success ? 'sent' : 'failed', {
+            providerMessageId,
+            providerResponse: sendResult,
+            sentAt: sendResult.success ? new Date().toISOString() : null,
+            failedAt: sendResult.success ? null : new Date().toISOString()
+        });
         
         console.log(`Message queued for client ${clientId} (${phoneNumber}): ${messageText.substring(0, 50)}...`);
         
@@ -115,10 +116,14 @@ async function sendWelcomeMessage(options) {
             status: 'pending'
         });
 
-        // In a production environment, you would integrate with an SMS service here
-        // For now, we'll simulate sending and mark as sent
-        // TODO: Integrate with actual SMS service provider
-        await Message.updateStatus(message.id, 'sent');
+        const sendResult = await sendSMSWithDetails(phoneNumber, messageText);
+        const providerMessageId = extractArkeselMessageId(sendResult.data);
+        await Message.updateStatus(message.id, sendResult.success ? 'sent' : 'failed', {
+            providerMessageId,
+            providerResponse: sendResult,
+            sentAt: sendResult.success ? new Date().toISOString() : null,
+            failedAt: sendResult.success ? null : new Date().toISOString()
+        });
         
         console.log(`Welcome message queued for client ${clientId} (${phoneNumber}): ${messageText.substring(0, 50)}...`);
         
@@ -137,24 +142,109 @@ async function sendWelcomeMessage(options) {
  * @returns {Promise<boolean>} Success status
  */
 async function sendSMS(phoneNumber, message) {
-    // TODO: Integrate with SMS service provider
-    // Examples:
-    // - Twilio: https://www.twilio.com/docs/sms
-    // - AWS SNS: https://aws.amazon.com/sns/
-    // - Local SMS gateway
-    
-    // Placeholder implementation
-    console.log(`[SMS] To: ${phoneNumber}`);
-    console.log(`[SMS] Message: ${message}`);
-    
-    // Return true to simulate success
-    // In production, replace this with actual SMS API call
-    return true;
+    const result = await sendSMSWithDetails(phoneNumber, message);
+    return result.success;
+}
+
+/**
+ * Send SMS and return provider response details
+ * @param {string} phoneNumber - Phone number to send to
+ * @param {string} message - Message text
+ * @returns {Promise<{success: boolean, status?: number, data?: any, error?: string}>}
+ */
+async function sendSMSWithDetails(phoneNumber, message) {
+    const apiKey = process.env.SYSTEM_API_KEY;
+    const smsApiUrl = process.env.SMS_API_URL || 'https://sms.arkesel.com/api/v2/sms/send';
+    const senderId = process.env.SMS_SENDER_ID || 'LuckySusu';
+
+    if (!apiKey || !smsApiUrl) {
+        logger.warn('SMS provider configuration missing', {
+            hasApiKey: !!apiKey,
+            hasApiUrl: !!smsApiUrl
+        });
+        return {
+            success: false,
+            error: 'Missing SMS provider configuration'
+        };
+    }
+
+    try {
+        const normalizedRecipient = normalizeGhanaNumber(phoneNumber);
+
+        const response = await fetch(smsApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'api-key': apiKey
+            },
+            body: JSON.stringify({
+                sender: senderId,
+                message,
+                recipients: [normalizedRecipient]
+            })
+        });
+
+        const responseText = await response.text();
+        let parsedData = responseText;
+        try {
+            parsedData = responseText ? JSON.parse(responseText) : null;
+        } catch (parseError) {
+            // Keep raw response text when provider does not return JSON
+        }
+
+        if (!response.ok) {
+            logger.error('SMS provider request failed', {
+                status: response.status,
+                statusText: response.statusText,
+                body: parsedData
+            });
+            return {
+                success: false,
+                status: response.status,
+                data: parsedData,
+                error: response.statusText
+            };
+        }
+
+        return {
+            success: true,
+            status: response.status,
+            data: parsedData
+        };
+    } catch (error) {
+        logger.error('SMS provider call failed', {
+            error: error.message
+        });
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+function normalizeGhanaNumber(phoneNumber) {
+    const digits = String(phoneNumber || '').replace(/\D/g, '');
+    if (digits.startsWith('233') && digits.length === 12) {
+        return digits;
+    }
+    if (digits.startsWith('0') && digits.length === 10) {
+        return `233${digits.slice(1)}`;
+    }
+    return digits;
+}
+
+function extractArkeselMessageId(providerData) {
+    if (!providerData || typeof providerData !== 'object') {
+        return null;
+    }
+    const firstRecord = Array.isArray(providerData.data) ? providerData.data[0] : null;
+    return firstRecord?.id || providerData.id || null;
 }
 
 module.exports = {
     sendTransactionMessage,
     sendWelcomeMessage,
-    sendSMS
+    sendSMS,
+    sendSMSWithDetails
 };
 

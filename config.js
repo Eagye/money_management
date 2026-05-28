@@ -36,6 +36,11 @@ function validateConfig() {
             value: process.env.LOG_LEVEL,
             default: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
             message: 'LOG_LEVEL not set, using default'
+        },
+        AUTO_OPEN_BROWSER: {
+            value: process.env.AUTO_OPEN_BROWSER,
+            default: 'false',
+            message: 'AUTO_OPEN_BROWSER not set, browser auto-launch disabled'
         }
     };
     
@@ -144,7 +149,8 @@ function getConfig() {
         adminEmail: (process.env.ADMIN_EMAIL || 'admin@luckysusu.com').toLowerCase(),
         allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
         rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
-        rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
+        rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+        autoOpenBrowser: process.env.AUTO_OPEN_BROWSER === 'true'
     };
 }
 

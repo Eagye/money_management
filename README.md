@@ -81,6 +81,7 @@ A comprehensive money management application for tracking client deposits, withd
    RATE_LIMIT_WINDOW_MS=900000
    RATE_LIMIT_MAX_REQUESTS=100
    JWT_EXPIRES_IN=24h
+   AUTO_OPEN_BROWSER=false
    ```
 
    **Important**: Generate a strong JWT_SECRET:
@@ -114,6 +115,35 @@ node server.js
 ```
 
 The server will start on `http://localhost:3000` (or the port specified in `.env`).
+
+### Health Check
+
+For production hosting and uptime checks (e.g. Railway), use:
+
+```bash
+GET /health
+```
+
+Expected response:
+
+```json
+{"status":"ok","uptime_seconds":123,"timestamp":"..."}
+```
+
+## 🚂 Railway Production Notes
+
+Before deploying, configure these environment variables in Railway:
+
+- `NODE_ENV=production`
+- `JWT_SECRET=<strong-random-secret-32+-chars>`
+- `ALLOWED_ORIGINS=https://your-public-domain`
+- `LOG_LEVEL=info`
+- `AUTO_OPEN_BROWSER=false`
+
+Notes:
+
+- Use `.env.example` as the reference template.
+- Ensure your persistent volume includes the SQLite database file if you stay on SQLite.
 
 ### Access the Application
 

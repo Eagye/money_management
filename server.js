@@ -40,6 +40,17 @@ const mimeTypes = {
 };
 
 const server = http.createServer(async (req, res) => {
+    // Lightweight health check endpoint for hosting platforms (Railway)
+    if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'ok',
+            uptime_seconds: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString()
+        }));
+        return;
+    }
+
     // Apply security headers
     securityHeaders(req, res, () => {});
     
@@ -123,8 +134,8 @@ initDatabase()
             logger.info('Database initialized and ready');
             logger.info('Press Ctrl+C to stop the server');
             
-            // Automatically open browser (only in development)
-            if (config.nodeEnv !== 'production') {
+            // Automatically open browser only when explicitly enabled
+            if (config.nodeEnv !== 'production' && config.autoOpenBrowser) {
                 const url = `http://localhost:${PORT}/`;
                 const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
                 exec(`${start} ${url}`, (error) => {

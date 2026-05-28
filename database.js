@@ -177,7 +177,11 @@ function initDatabase() {
                     message TEXT NOT NULL,
                     phone_number TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'pending',
+                    provider_message_id TEXT,
+                    provider_response TEXT,
                     sent_at DATETIME,
+                    delivered_at DATETIME,
+                    failed_at DATETIME,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
                     FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
@@ -382,7 +386,11 @@ function checkMessagesTable(db, resolve, reject) {
                     message TEXT NOT NULL,
                     phone_number TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'pending',
+                    provider_message_id TEXT,
+                    provider_response TEXT,
                     sent_at DATETIME,
+                    delivered_at DATETIME,
+                    failed_at DATETIME,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
                     FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
@@ -408,15 +416,76 @@ function checkMessagesTable(db, resolve, reject) {
                             if (idxErr3) {
                                 reject(idxErr3);
                             } else {
-                                resolve();
+                                db.run(`CREATE INDEX IF NOT EXISTS idx_messages_provider_message_id ON messages(provider_message_id)`, (idxErr4) => {
+                                    if (idxErr4) {
+                                        reject(idxErr4);
+                                    } else {
+                                        ensureMessageColumns(db, resolve, reject);
+                                    }
+                                });
                             }
                         });
                     });
                 });
             });
         } else {
-            resolve();
+            ensureMessageColumns(db, resolve, reject);
         }
+    });
+}
+
+function ensureMessageColumns(db, resolve, reject) {
+    db.all(`PRAGMA table_info(messages)`, (err, columns) => {
+        if (err) {
+            reject(err);
+            return;
+        }
+
+        const columnNames = new Set((columns || []).map((column) => column.name));
+        const statements = [];
+
+        if (!columnNames.has('provider_message_id')) {
+            statements.push(`ALTER TABLE messages ADD COLUMN provider_message_id TEXT`);
+        }
+        if (!columnNames.has('provider_response')) {
+            statements.push(`ALTER TABLE messages ADD COLUMN provider_response TEXT`);
+        }
+        if (!columnNames.has('delivered_at')) {
+            statements.push(`ALTER TABLE messages ADD COLUMN delivered_at DATETIME`);
+        }
+        if (!columnNames.has('failed_at')) {
+            statements.push(`ALTER TABLE messages ADD COLUMN failed_at DATETIME`);
+        }
+
+        if (statements.length === 0) {
+            db.run(`CREATE INDEX IF NOT EXISTS idx_messages_provider_message_id ON messages(provider_message_id)`, (indexErr) => {
+                if (indexErr) reject(indexErr);
+                else resolve();
+            });
+            return;
+        }
+
+        let idx = 0;
+        const runNext = () => {
+            if (idx >= statements.length) {
+                db.run(`CREATE INDEX IF NOT EXISTS idx_messages_provider_message_id ON messages(provider_message_id)`, (indexErr) => {
+                    if (indexErr) reject(indexErr);
+                    else resolve();
+                });
+                return;
+            }
+
+            const sql = statements[idx++];
+            db.run(sql, (alterErr) => {
+                if (alterErr && !String(alterErr.message).includes('duplicate column name')) {
+                    reject(alterErr);
+                    return;
+                }
+                runNext();
+            });
+        };
+
+        runNext();
     });
 }
 
@@ -3434,19 +3503,73 @@ const Message = {
     },
 
     // Update message status
-    updateStatus: (messageId, status, sentAt = null) => {
+    updateStatus: (messageId, status, options = {}) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
-            const sentAtValue = sentAt || (status === 'sent' ? new Date().toISOString() : null);
+            const sentAtValue = options.sentAt || (status === 'sent' ? new Date().toISOString() : null);
+            const deliveredAtValue = options.deliveredAt || (status === 'delivered' ? new Date().toISOString() : null);
+            const failedAtValue = options.failedAt || (status === 'failed' ? new Date().toISOString() : null);
+            const providerMessageId = options.providerMessageId || null;
+            const providerResponse = typeof options.providerResponse === 'undefined'
+                ? null
+                : JSON.stringify(options.providerResponse);
             
             db.run(
-                `UPDATE messages SET status = ?, sent_at = ? WHERE id = ?`,
-                [status, sentAtValue, messageId],
+                `UPDATE messages
+                 SET status = ?,
+                     sent_at = COALESCE(?, sent_at),
+                     delivered_at = COALESCE(?, delivered_at),
+                     failed_at = COALESCE(?, failed_at),
+                     provider_message_id = COALESCE(?, provider_message_id),
+                     provider_response = COALESCE(?, provider_response)
+                 WHERE id = ?`,
+                [status, sentAtValue, deliveredAtValue, failedAtValue, providerMessageId, providerResponse, messageId],
                 function(err) {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve({ id: messageId, status, sent_at: sentAtValue });
+                        resolve({
+                            id: messageId,
+                            status,
+                            sent_at: sentAtValue,
+                            delivered_at: deliveredAtValue,
+                            failed_at: failedAtValue,
+                            provider_message_id: providerMessageId
+                        });
+                    }
+                }
+            );
+        });
+    },
+
+    updateByProviderMessageId: (providerMessageId, status, options = {}) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+            const sentAtValue = options.sentAt || (status === 'sent' ? new Date().toISOString() : null);
+            const deliveredAtValue = options.deliveredAt || (status === 'delivered' ? new Date().toISOString() : null);
+            const failedAtValue = options.failedAt || (status === 'failed' ? new Date().toISOString() : null);
+            const providerResponse = typeof options.providerResponse === 'undefined'
+                ? null
+                : JSON.stringify(options.providerResponse);
+
+            db.run(
+                `UPDATE messages
+                 SET status = ?,
+                     sent_at = COALESCE(?, sent_at),
+                     delivered_at = COALESCE(?, delivered_at),
+                     failed_at = COALESCE(?, failed_at),
+                     provider_response = COALESCE(?, provider_response)
+                 WHERE provider_message_id = ?`,
+                [status, sentAtValue, deliveredAtValue, failedAtValue, providerResponse, providerMessageId],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({
+                            provider_message_id: providerMessageId,
+                            status,
+                            updated: this.changes
+                        });
                     }
                 }
             );
