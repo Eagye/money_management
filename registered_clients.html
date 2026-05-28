@@ -2,36 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Registered Clients - Lucky Susu Ent</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="agent-layout">
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="agent-sidebar" id="agentSidebar">
+        <div class="agent-sidebar-title">
+            Lucky Susu Ent
+            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">×</button>
+        </div>
+        <div class="agent-sidebar-agent">
+            <span id="agentNameSidebar">Loading...</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="sidebar-menu-item">
+                <button type="button" class="sidebar-menu-button" id="registerBtn">Register New</button>
+            </li>
+            <li class="sidebar-menu-item">
+                <button type="button" class="sidebar-menu-button" id="dayViewBtn">Open Day View</button>
+            </li>
+            <li class="sidebar-menu-item">
+                <button type="button" class="sidebar-menu-button sidebar-menu-button-danger" id="logoutBtn">Logout</button>
+            </li>
+        </ul>
+    </aside>
+
+    <main class="agent-main">
     <div class="container">
-        <!-- Header -->
-        <header class="header">
+        <header class="header header-with-toolbar">
             <h1 class="title" id="agentNameTitle">Lucky Susu Ent — <span id="agentName">Loading...</span></h1>
-            <div class="header-buttons">
-                <button class="btn btn-primary" id="registerBtn">Register New</button>
-                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+            <div class="header-toolbar">
+                <button type="button" class="icon-btn icon-btn-search" id="searchBtn" aria-label="Search clients" title="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+                <button type="button" class="icon-btn icon-btn-refresh" id="refreshBtn" aria-label="Refresh client list" title="Refresh">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                </button>
             </div>
         </header>
 
-        <!-- Search Section -->
-        <div class="search-section">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search by name or phone" class="search-input" autocomplete="off">
-                <button class="btn btn-primary" id="searchBtn">Search</button>
-                <button class="btn btn-success" id="refreshBtn">Refresh</button>
-            </div>
+        <div class="search-section search-section-date-only">
             <div class="date-section">
                 <label for="datePicker" class="date-label">View day:</label>
                 <input type="date" id="datePicker" class="date-input">
-                <button type="button" class="btn btn-primary" id="dayViewBtn" onclick="const d=document.getElementById('datePicker');if(d&&d.value){window.location.href='day_view.html?date='+d.value;}else{alert('Please select a date first');}return false;">Open Day View</button>
             </div>
         </div>
 
-        <!-- Statistics Cards -->
         <div class="stats-container">
             <div class="stat-card">
                 <div class="stat-label">TOTAL CLIENTS</div>
@@ -51,18 +83,19 @@
             </div>
         </div>
 
-        <!-- Clients List -->
         <div class="clients-container" id="clientsContainer">
             <div id="loadingMessage" style="text-align: center; padding: 40px; color: var(--text-secondary);">
                 Loading clients...
             </div>
             <div id="emptyMessage" style="text-align: center; padding: 40px; color: var(--text-secondary); display: none;">
-                No clients registered yet. Click "Register New" to add your first client.
+                No clients registered yet. Open the menu and tap Register New to add your first client.
             </div>
         </div>
     </div>
+    </main>
 
     <script src="api-client.js"></script>
+    <script src="agent-mobile-menu.js"></script>
     <script src="auth-check.js"></script>
     <script src="dialog.js"></script>
     <script src="deposit-dialog.js"></script>
@@ -70,4 +103,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-

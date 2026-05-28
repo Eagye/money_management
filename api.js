@@ -523,8 +523,9 @@ async function handleAPI(req, res) {
                 try {
                     const date = parsedUrl.query.date;
                     const page = parseInt(parsedUrl.query.page) || 1;
-                    const limit = Math.min(parseInt(parsedUrl.query.limit) || 100, 200); // Max limit 200
-                    const includeTotal = parsedUrl.query.includeTotal !== 'false'; // Default true
+                    const limit = Math.min(parseInt(parsedUrl.query.limit) || 500, 1000);
+                    const includeTotal = parsedUrl.query.includeTotal !== 'false';
+                    const includeSummary = parsedUrl.query.includeSummary !== 'false';
                     if (!date) {
                         res.writeHead(400);
                         res.end(JSON.stringify({ success: false, error: 'Date parameter is required' }));
@@ -536,7 +537,7 @@ async function handleAPI(req, res) {
                         res.end(JSON.stringify({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' }));
                         return;
                     }
-                    const result = await Transaction.getByDate(date, req.user.id, page, limit, includeTotal);
+                    const result = await Transaction.getByDate(date, req.user.id, page, limit, includeTotal, includeSummary);
                     res.writeHead(200);
                     res.end(JSON.stringify({ success: true, ...result }));
                 } catch (err) {

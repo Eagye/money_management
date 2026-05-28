@@ -770,15 +770,145 @@
             font-size: 14px;
         }
 
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .mobile-menu-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-menu-toggle span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: white;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .mobile-menu-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .mobile-menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .mobile-menu-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-close-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .admin-sidebar-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .sidebar-overlay {
+                display: block;
+            }
+
+            .sidebar-close-btn {
+                display: flex;
+            }
+
             .admin-sidebar {
-                width: 220px;
+                width: 280px;
+                max-width: 85vw;
+                position: fixed;
+                height: 100vh;
+                transform: translateX(-100%);
+                z-index: 101;
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+                transition: transform 0.3s ease;
+            }
+
+            .admin-sidebar.mobile-visible {
+                transform: translateX(0);
             }
 
             .admin-main {
-                margin-left: 220px;
+                margin-left: 0;
                 padding: 16px;
+                padding-top: 76px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 20px;
             }
 
             .transactions-table {
@@ -797,14 +927,33 @@
             .summary-card {
                 cursor: pointer;
             }
+
+            .date-selector {
+                width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="admin-container">
         <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar-title">
+                Lucky Susu Ent Admin
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">×</button>
+            </div>
             <ul class="sidebar-menu">
                 <li class="sidebar-menu-item">
                     <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
@@ -904,6 +1053,7 @@
         })();
     </script>
     <script src="/api-client.js"></script>
+    <script src="/admin/mobile-menu.js"></script>
     <script>
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-GH', {

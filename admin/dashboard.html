@@ -591,9 +591,72 @@
             }
         }
 
+        // Helper function to check if click/touch is inside Overview dropdown
+        function isClickInsideOverviewDropdown(targetElement) {
+            const dropdown = document.getElementById('overviewDropdown');
+            const button = document.getElementById('overviewBtn');
+            
+            if (!dropdown || !button) return false;
+            
+            // Handle null or invalid target
+            if (!targetElement) return false;
+            
+            // Check if clicking on the button itself
+            if (button === targetElement || button.contains(targetElement) || targetElement.closest('#overviewBtn')) {
+                return true;
+            }
+            
+            // Check if clicking anywhere within the Overview dropdown
+            if (dropdown === targetElement || dropdown.contains(targetElement)) {
+                return true;
+            }
+            
+            // Check using closest (more reliable for nested elements)
+            const overviewDropdown = targetElement.closest('#overviewDropdown');
+            if (overviewDropdown === dropdown) {
+                return true;
+            }
+            
+            // Explicitly check for submenu items within the Overview dropdown
+            const submenuItem = targetElement.closest('.submenu-item');
+            if (submenuItem && dropdown.contains(submenuItem)) {
+                return true;
+            }
+            
+            // Check for submenu parents within the Overview dropdown
+            const dropdownParent = targetElement.closest('.dropdown-parent');
+            if (dropdownParent && dropdown.contains(dropdownParent)) {
+                return true;
+            }
+            
+            // Check for any submenu within the Overview dropdown
+            const submenu = targetElement.closest('.submenu');
+            if (submenu && dropdown.contains(submenu)) {
+                return true;
+            }
+            
+            // Check if target is a button or link inside the dropdown
+            if (targetElement.tagName === 'BUTTON' || targetElement.tagName === 'A') {
+                if (dropdown.contains(targetElement)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Flag to prevent dropdown from closing during navigation
+        let isNavigating = false;
+
         // Close dropdown when clicking outside
         // Use bubble phase (default) so it runs after button click handlers
-        document.addEventListener('click', function(event) {
+        // Also handle touch events for mobile devices
+        function handleClickOutside(event) {
+            // Don't close if we're navigating
+            if (isNavigating) {
+                return;
+            }
+
             const dropdown = document.getElementById('overviewDropdown');
             const button = document.getElementById('overviewBtn');
             const depositsSubmenu = document.getElementById('depositsSubmenu');
@@ -601,12 +664,33 @@
             const accountsSubmenu = document.getElementById('accountsSubmenu');
             const accountsMenuItem = document.getElementById('accountsMenuItem');
             
-            // Don't close if clicking on the button or dropdown
-            const isClickOnButton = button && (button === event.target || button.contains(event.target) || event.target.closest('#overviewBtn'));
-            const isClickOnDropdown = dropdown && (dropdown === event.target || dropdown.contains(event.target) || event.target.closest('#overviewDropdown'));
+            // Check if clicking on deposit menu items specifically (more comprehensive check)
+            const target = event.target;
+            const isDepositItem = target && (
+                target.id === 'dailyDepositsMenuItem' ||
+                target.id === 'weeklyDepositsMenuItem' ||
+                target.id === 'monthlyDepositsMenuItem' ||
+                target.closest('#dailyDepositsMenuItem') ||
+                target.closest('#weeklyDepositsMenuItem') ||
+                target.closest('#monthlyDepositsMenuItem') ||
+                target.closest('.submenu-item') && target.closest('#depositsSubmenu')
+            );
+            
+            // Don't close if clicking on deposit items
+            if (isDepositItem) {
+                // Explicitly keep dropdown open
+                if (dropdown && button) {
+                    dropdown.classList.add('show');
+                    button.classList.add('active');
+                }
+                return;
+            }
+            
+            // Use the helper function to check if click is inside Overview dropdown
+            const isClickInsideOverview = isClickInsideOverviewDropdown(event.target);
             
             // Close main dropdown if clicking outside
-            if (!isClickOnButton && !isClickOnDropdown) {
+            if (!isClickInsideOverview) {
                 if (dropdown) {
                     dropdown.classList.remove('show');
                 }
@@ -646,7 +730,33 @@
                 agentsSubmenu.classList.remove('show');
                 agentsMenuItem.classList.remove('active');
             }
-        });
+        }
+        
+        // Add click event listener (use bubble phase, runs after capture phase handlers)
+        document.addEventListener('click', handleClickOutside, false);
+        
+        // Add touch event listeners for mobile devices
+        // Use bubble phase so deposit handlers (in capture) can prevent this
+        document.addEventListener('touchend', function(event) {
+            // Only handle if it's a mobile device (touch screen)
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                // Check if this touch was on a deposit menu item
+                const target = event.target;
+                const isDepositItem = target && (
+                    target.id === 'dailyDepositsMenuItem' ||
+                    target.id === 'weeklyDepositsMenuItem' ||
+                    target.id === 'monthlyDepositsMenuItem' ||
+                    target.closest('#dailyDepositsMenuItem') ||
+                    target.closest('#weeklyDepositsMenuItem') ||
+                    target.closest('#monthlyDepositsMenuItem')
+                );
+                
+                // Don't close if clicking on deposit items or if navigating
+                if (!isDepositItem && !isNavigating) {
+                    handleClickOutside(event);
+                }
+            }
+        }, { passive: true });
 
         // Load and display clients grouped by agent
         async function loadClients() {
@@ -1071,31 +1181,85 @@
             // Daily Deposits menu item
             const dailyDepositsMenuItem = document.getElementById('dailyDepositsMenuItem');
             if (dailyDepositsMenuItem) {
-                dailyDepositsMenuItem.addEventListener('click', function(e) {
+                const handleDepositNav = function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    // Set flag to prevent dropdown from closing
+                    isNavigating = true;
+                    
+                    // Ensure Overview dropdown stays open
+                    const dropdown = document.getElementById('overviewDropdown');
+                    const button = document.getElementById('overviewBtn');
+                    if (dropdown && button) {
+                        dropdown.classList.add('show');
+                        button.classList.add('active');
+                    }
+                    
+                    // Navigate
                     window.location.href = '/admin/deposits/daily.html';
-                });
+                };
+                
+                // Use capture phase to handle before click-outside handler
+                dailyDepositsMenuItem.addEventListener('click', handleDepositNav, true);
+                dailyDepositsMenuItem.addEventListener('touchend', handleDepositNav, { capture: true, passive: false });
             }
 
             // Weekly Deposits menu item
             const weeklyDepositsMenuItem = document.getElementById('weeklyDepositsMenuItem');
             if (weeklyDepositsMenuItem) {
-                weeklyDepositsMenuItem.addEventListener('click', function(e) {
+                const handleDepositNav = function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    // Set flag to prevent dropdown from closing
+                    isNavigating = true;
+                    
+                    // Ensure Overview dropdown stays open
+                    const dropdown = document.getElementById('overviewDropdown');
+                    const button = document.getElementById('overviewBtn');
+                    if (dropdown && button) {
+                        dropdown.classList.add('show');
+                        button.classList.add('active');
+                    }
+                    
+                    // Navigate
                     window.location.href = '/admin/deposits/weekly.html';
-                });
+                };
+                
+                // Use capture phase to handle before click-outside handler
+                weeklyDepositsMenuItem.addEventListener('click', handleDepositNav, true);
+                weeklyDepositsMenuItem.addEventListener('touchend', handleDepositNav, { capture: true, passive: false });
             }
 
             // Monthly Deposits menu item
             const monthlyDepositsMenuItem = document.getElementById('monthlyDepositsMenuItem');
             if (monthlyDepositsMenuItem) {
-                monthlyDepositsMenuItem.addEventListener('click', function(e) {
+                const handleDepositNav = function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    // Set flag to prevent dropdown from closing
+                    isNavigating = true;
+                    
+                    // Ensure Overview dropdown stays open
+                    const dropdown = document.getElementById('overviewDropdown');
+                    const button = document.getElementById('overviewBtn');
+                    if (dropdown && button) {
+                        dropdown.classList.add('show');
+                        button.classList.add('active');
+                    }
+                    
+                    // Navigate
                     window.location.href = '/admin/deposits/monthly.html';
-                });
+                };
+                
+                // Use capture phase to handle before click-outside handler
+                monthlyDepositsMenuItem.addEventListener('click', handleDepositNav, true);
+                monthlyDepositsMenuItem.addEventListener('touchend', handleDepositNav, { capture: true, passive: false });
             }
 
             // Daily Withdrawals menu item

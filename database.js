@@ -1928,9 +1928,8 @@ const Transaction = {
         });
     },
 
-    // Get transactions by date (filtered by agent_id)
-    // Optimized: Parallel queries, max offset limit, better JOIN optimization
-    getByDate: (date, agentId, page = 1, limit = 100, includeTotal = true) => {
+    // Get agent transactions by date (deposits recorded by this agent on this day)
+    getByDate: (date, agentId, page = 1, limit = 500, includeTotal = true, includeSummary = true) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
             
@@ -1939,52 +1938,90 @@ const Transaction = {
                 return;
             }
             
-            // Limit maximum offset to prevent extremely slow queries
             const maxOffset = 10000;
             const offset = (page - 1) * limit;
             if (offset > maxOffset) {
                 resolve({ 
                     data: [], 
+                    summary: {
+                        total_amount: 0,
+                        transaction_count: 0,
+                        unique_clients: 0
+                    },
                     pagination: { 
                         page, 
                         limit, 
-                        total: null, 
-                        totalPages: null,
+                        total: 0, 
+                        totalPages: 0,
                         error: 'Pagination limit reached. Please refine your search.' 
                     } 
                 });
                 return;
             }
+
+            const whereClause = `t.transaction_date = ? AND t.agent_id = ? AND t.transaction_type = 'deposit'`;
+            const baseParams = [date, agentId];
             
-            // Execute count and data queries in parallel
+            let summaryResult = null;
             let countResult = null;
             let dataResult = null;
+            let summaryDone = !includeSummary;
             let countDone = !includeTotal;
             let dataDone = false;
             
             const checkComplete = () => {
-                if (countDone && dataDone) {
-                    const total = includeTotal ? (countResult?.total || 0) : null;
-                    resolve({
-                        data: dataResult || [],
-                        pagination: {
-                            page,
-                            limit,
-                            total: total,
-                            totalPages: total !== null ? Math.ceil(total / limit) : null,
-                            hasMore: (dataResult?.length || 0) === limit
-                        }
-                    });
+                if (!summaryDone || !countDone || !dataDone) {
+                    return;
                 }
+                const transactionCount = includeSummary
+                    ? (summaryResult?.transaction_count || 0)
+                    : (countResult?.total || 0);
+                resolve({
+                    data: dataResult || [],
+                    summary: includeSummary ? {
+                        total_amount: parseFloat(summaryResult?.total_amount) || 0,
+                        transaction_count: summaryResult?.transaction_count || 0,
+                        unique_clients: summaryResult?.unique_clients || 0
+                    } : undefined,
+                    pagination: {
+                        page,
+                        limit,
+                        total: includeTotal ? transactionCount : null,
+                        totalPages: includeTotal ? Math.ceil(transactionCount / limit) : null,
+                        hasMore: (dataResult?.length || 0) === limit
+                    }
+                });
             };
             
-            // Get total count in parallel (if needed) - optimized query without JOIN
-            if (includeTotal) {
+            if (includeSummary) {
+                db.get(
+                    `SELECT 
+                        COUNT(*) as transaction_count,
+                        COUNT(DISTINCT t.client_id) as unique_clients,
+                        COALESCE(SUM(t.amount), 0) as total_amount
+                     FROM transactions t
+                     WHERE ${whereClause}`,
+                    baseParams,
+                    (err, row) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        summaryResult = row;
+                        summaryDone = true;
+                        if (includeTotal) {
+                            countResult = { total: row?.transaction_count || 0 };
+                            countDone = true;
+                        }
+                        checkComplete();
+                    }
+                );
+            } else if (includeTotal) {
                 db.get(
                     `SELECT COUNT(*) as total 
                      FROM transactions t
-                     WHERE t.transaction_date = ? AND t.agent_id = ?`,
-                    [date, agentId],
+                     WHERE ${whereClause}`,
+                    baseParams,
                     (err, countRow) => {
                         if (err) {
                             reject(err);
@@ -1997,15 +2034,14 @@ const Transaction = {
                 );
             }
             
-            // Get paginated results - JOIN only for data query (using composite index)
             db.all(
                 `SELECT t.*, c.name as client_name, c.phone as client_phone 
                  FROM transactions t
                  JOIN clients c ON t.client_id = c.id
-                 WHERE t.transaction_date = ? AND t.agent_id = ? AND c.agent_id = ?
+                 WHERE ${whereClause}
                  ORDER BY t.created_at DESC, t.id DESC
                  LIMIT ? OFFSET ?`,
-                [date, agentId, agentId, limit, offset],
+                [...baseParams, limit, offset],
                 (err, rows) => {
                     if (err) {
                         reject(err);

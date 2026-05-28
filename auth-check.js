@@ -51,7 +51,16 @@
     function redirectToLogin() {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('user');
-            // Use absolute path to ensure redirect goes to root
+            sessionStorage.removeItem('user');
+            window.location.href = '/index.html';
+        }
+    }
+
+    function logoutDueToInactivity() {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+            sessionStorage.setItem('logoutReason', 'idle');
             window.location.href = '/index.html';
         }
     }
@@ -60,6 +69,7 @@
     if (typeof window !== 'undefined') {
         window.checkAuth = checkAuth;
         window.redirectToLogin = redirectToLogin;
+        window.logoutDueToInactivity = logoutDueToInactivity;
         
         // Auto-check on page load for protected pages
         // Only check if not on login or register pages
@@ -68,11 +78,16 @@
         const isPublicPage = publicPages.some(page => currentPage.includes(page));
         
         if (!isPublicPage) {
-            // Wait for DOM to be ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => checkAuth());
-            } else {
+            const runChecks = () => {
                 checkAuth();
+                if (typeof window.startIdleSessionWatch === 'function') {
+                    window.startIdleSessionWatch();
+                }
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', runChecks);
+            } else {
+                runChecks();
             }
         }
     }

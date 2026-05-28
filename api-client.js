@@ -25,6 +25,13 @@ function setToken(token, userData) {
     if (typeof window !== 'undefined') {
         const user = { ...userData, token };
         localStorage.setItem('user', JSON.stringify(user));
+        sessionStorage.removeItem('logoutReason');
+        if (typeof window.resetIdleSessionTimer === 'function') {
+            window.resetIdleSessionTimer();
+        }
+        if (typeof window.startIdleSessionWatch === 'function') {
+            window.startIdleSessionWatch();
+        }
     }
 }
 
@@ -36,6 +43,10 @@ function clearToken() {
 }
 
 async function apiRequest(endpoint, options = {}) {
+    if (typeof window.resetIdleSessionTimer === 'function') {
+        window.resetIdleSessionTimer();
+    }
+
     const fullUrl = `${API_BASE_URL}${endpoint}`;
     console.log('🌐 API Request:', options.method || 'GET', fullUrl);
     
@@ -131,7 +142,13 @@ const TransactionAPI = {
     
     getByClientId: (clientId) => apiRequest(`/transactions/client/${clientId}`, { method: 'GET' }),
     
-    getByDate: (date) => apiRequest(`/transactions/date?date=${date}`, { method: 'GET' }),
+    getByDate: (date, options = {}) => {
+        const params = new URLSearchParams({ date });
+        if (options.limit != null) params.set('limit', String(options.limit));
+        if (options.page != null) params.set('page', String(options.page));
+        if (options.includeSummary === false) params.set('includeSummary', 'false');
+        return apiRequest(`/transactions/date?${params.toString()}`, { method: 'GET' });
+    },
     
     reverse: (transactionId, reason) => apiRequest(`/transactions/${transactionId}/reverse`, {
         method: 'POST',
@@ -212,3 +229,108 @@ if (typeof window !== 'undefined') {
     window.clearToken = clearToken;
 }
 
+// Auto logout after 5 minutes of inactivity (agent + admin pages)
+(function initIdleSessionTimeout() {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+    const MOUSEMOVE_THROTTLE_MS = 2000;
+    const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'wheel'];
+
+    let idleTimer = null;
+    let isLoggingOut = false;
+    let lastMouseReset = 0;
+    let listenersAttached = false;
+
+    function isPublicPage() {
+        const path = window.location.pathname.toLowerCase();
+        return path === '/' ||
+            path.endsWith('/index.html') ||
+            path.endsWith('index.html') ||
+            path.endsWith('/register_agent.html') ||
+            path.endsWith('register_agent.html');
+    }
+
+    function hasActiveSession() {
+        return !!getToken();
+    }
+
+    function redirectToLoginAfterIdle() {
+        const loginPath = '/index.html';
+        if (window.location.pathname.toLowerCase().endsWith('index.html') ||
+            window.location.pathname === '/') {
+            return;
+        }
+        window.location.href = loginPath;
+    }
+
+    function logoutDueToIdle() {
+        if (isLoggingOut || !hasActiveSession()) {
+            return;
+        }
+        isLoggingOut = true;
+        clearTimeout(idleTimer);
+        clearToken();
+        sessionStorage.removeItem('user');
+        sessionStorage.setItem('logoutReason', 'idle');
+        redirectToLoginAfterIdle();
+    }
+
+    function resetIdleTimer() {
+        if (isPublicPage() || !hasActiveSession() || isLoggingOut) {
+            return;
+        }
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(logoutDueToIdle, IDLE_TIMEOUT_MS);
+    }
+
+    function onActivity(event) {
+        if (event && event.type === 'mousemove') {
+            const now = Date.now();
+            if (now - lastMouseReset < MOUSEMOVE_THROTTLE_MS) {
+                return;
+            }
+            lastMouseReset = now;
+        }
+        resetIdleTimer();
+    }
+
+    function attachActivityListeners() {
+        if (listenersAttached) {
+            return;
+        }
+        listenersAttached = true;
+        ACTIVITY_EVENTS.forEach((eventName) => {
+            window.addEventListener(eventName, onActivity, { passive: true, capture: true });
+        });
+        window.addEventListener('mousemove', onActivity, { passive: true, capture: true });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                resetIdleTimer();
+            }
+        });
+    }
+
+    function startIdleWatch() {
+        if (isPublicPage() || !hasActiveSession()) {
+            return;
+        }
+        attachActivityListeners();
+        resetIdleTimer();
+    }
+
+    function bootstrap() {
+        startIdleWatch();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrap);
+    } else {
+        bootstrap();
+    }
+
+    window.resetIdleSessionTimer = resetIdleTimer;
+    window.startIdleSessionWatch = startIdleWatch;
+})();

@@ -74,6 +74,18 @@ function initMobileMenu() {
                     return;
                 }
                 
+                // Skip deposit menu items - they should keep Overview dropdown open
+                const isDepositItem = target.id === 'dailyDepositsMenuItem' ||
+                    target.id === 'weeklyDepositsMenuItem' ||
+                    target.id === 'monthlyDepositsMenuItem' ||
+                    target.closest('#dailyDepositsMenuItem') ||
+                    target.closest('#weeklyDepositsMenuItem') ||
+                    target.closest('#monthlyDepositsMenuItem');
+                
+                if (isDepositItem) {
+                    return;
+                }
+                
                 // Close menu for submenu items (they navigate to pages)
                 // Also close for other navigation items like logout that don't have the submenu-item class
                 const isSubmenuItem = target.classList.contains('submenu-item');

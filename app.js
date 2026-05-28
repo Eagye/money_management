@@ -295,30 +295,76 @@ if (typeof window !== 'undefined') {
 }
 
 // Load and display agent name
+function setAgentDisplayName(name) {
+    const agentNameElement = document.getElementById('agentName');
+    const sidebarName = document.getElementById('agentNameSidebar');
+    if (agentNameElement) {
+        agentNameElement.textContent = name;
+    }
+    if (sidebarName) {
+        sidebarName.textContent = name;
+    }
+}
+
 function loadAgentName() {
     try {
         const userData = localStorage.getItem('user');
         if (userData) {
             const user = JSON.parse(userData);
-            const agentNameElement = document.getElementById('agentName');
-            if (agentNameElement && user.name) {
-                agentNameElement.textContent = user.name;
-            } else if (agentNameElement) {
-                agentNameElement.textContent = 'Agent';
-            }
+            setAgentDisplayName(user.name || 'Agent');
         } else {
-            const agentNameElement = document.getElementById('agentName');
-            if (agentNameElement) {
-                agentNameElement.textContent = 'Guest';
-            }
+            setAgentDisplayName('Guest');
         }
     } catch (error) {
         console.error('Error loading agent name:', error);
-        const agentNameElement = document.getElementById('agentName');
-        if (agentNameElement) {
-            agentNameElement.textContent = 'Agent';
-        }
+        setAgentDisplayName('Agent');
     }
+}
+
+function closeAgentMenuIfOpen() {
+    if (typeof window.closeAgentMenu === 'function') {
+        window.closeAgentMenu();
+    }
+}
+
+function showSearchDialog() {
+    if (typeof Dialog === 'undefined') {
+        const term = prompt('Search by name or phone:');
+        if (term !== null) {
+            searchClients(term);
+        }
+        return;
+    }
+
+    const inputId = 'searchDialogInput';
+    Dialog.show({
+        title: 'Search Clients',
+        message: `<input type="text" id="${inputId}" class="search-dialog-input" placeholder="Search by name or phone" autocomplete="off">`,
+        type: 'info',
+        confirmText: 'Search',
+        cancelText: 'Cancel',
+        showCancel: true,
+        onConfirm: () => {
+            const input = document.getElementById(inputId);
+            searchClients(input ? input.value : '');
+        }
+    });
+
+    setTimeout(() => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.focus();
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('dialogConfirm')?.click();
+            }
+        });
+    }, 50);
+}
+
+if (typeof window !== 'undefined') {
+    window.showSearchDialog = showSearchDialog;
 }
 
 // Event listeners
@@ -328,7 +374,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchBtn = document.getElementById('searchBtn');
     const refreshBtn = document.getElementById('refreshBtn');
     const dayViewBtn = document.getElementById('dayViewBtn');
-    const searchInput = document.getElementById('searchInput');
 
     // Load and display agent name
     loadAgentName();
@@ -346,6 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Register New button
     if (registerBtn) {
         registerBtn.addEventListener('click', function() {
+            closeAgentMenuIfOpen();
             window.location.href = 'register_client.html';
         });
     }
@@ -353,6 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Logout button
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
+            closeAgentMenuIfOpen();
             // Clear user session and token
             if (typeof clearToken !== 'undefined') {
                 clearToken();
@@ -365,44 +412,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Search button
     if (searchBtn) {
-        searchBtn.addEventListener('click', function() {
-            const searchTerm = searchInput.value.trim();
-            searchClients(searchTerm);
-        });
+        searchBtn.addEventListener('click', showSearchDialog);
     }
 
-    // Search on Enter key
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchBtn.click();
-            }
-        });
-
-        // Clear search on input change (optional - search as you type)
-        // searchInput.addEventListener('input', function() {
-        //     const searchTerm = searchInput.value.trim();
-        //     if (searchTerm === '') {
-        //         renderClients(allClients);
-        //     }
-        // });
-    }
-
-    // Refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
-            if (searchInput) {
-                searchInput.value = '';
-            }
             refreshClients();
         });
-    }
-
-    // Clear search input on page load
-    if (searchInput) {
-        searchInput.value = '';
     }
 
     // Day View button
@@ -411,7 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function handleDayViewClick(e) {
             console.log('Day View button clicked!');
-            
+            closeAgentMenuIfOpen();
+
             const datePicker = document.getElementById('datePicker');
             if (!datePicker) {
                 console.error('Date picker not found!');

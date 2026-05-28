@@ -485,7 +485,7 @@
                 </div>
                 <div class="summary-card">
                     <span class="summary-icon">💰</span>
-                    <div class="summary-label">Total Amount</div>
+                    <div class="summary-label">Total Deposits</div>
                     <div class="summary-value" id="totalAmount">₵0.00</div>
                 </div>
                 <div class="summary-card">
@@ -572,22 +572,27 @@
 
             try {
                 console.log('Loading transactions for date:', date);
-                const response = await TransactionAPI.getByDate(date);
+                const response = await TransactionAPI.getByDate(date, { limit: 1000 });
                 
                 if (!response || !response.success) {
                     throw new Error(response?.error || 'Failed to load transactions');
                 }
 
                 const transactions = response.data || [];
-                console.log('Loaded', transactions.length, 'transactions');
+                const summary = response.summary || {
+                    total_amount: transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+                    transaction_count: transactions.length,
+                    unique_clients: new Set(transactions.map(t => t.client_id)).size
+                };
+                console.log('Loaded', transactions.length, 'transactions for agent day', summary);
 
                 // Update title
                 const titleElement = document.getElementById('dayViewTitle');
                 const formattedDate = formatDate(date);
-                titleElement.textContent = `Transactions for ${formattedDate}`;
+                titleElement.textContent = `Deposits for ${formattedDate}`;
 
-                // Update summary
-                updateSummary(transactions);
+                // Update summary from server totals (all agent deposits for this day)
+                updateSummary(summary);
 
                 // Render transactions
                 if (transactions.length === 0) {
@@ -646,23 +651,22 @@
             }, stepTime);
         }
 
-        // Update summary statistics with animation
-        function updateSummary(transactions) {
-            const totalTransactions = transactions.length;
-            const totalAmount = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-            const uniqueClients = new Set(transactions.map(t => t.client_id)).size;
+        // Update summary statistics with animation (uses server-side totals for the agent's day)
+        function updateSummary(summary) {
+            const totalTransactions = summary.transaction_count || 0;
+            const totalAmount = parseFloat(summary.total_amount) || 0;
+            const uniqueClients = summary.unique_clients || 0;
 
             const totalTransactionsEl = document.getElementById('totalTransactions');
             const totalAmountEl = document.getElementById('totalAmount');
             const uniqueClientsEl = document.getElementById('uniqueClients');
 
-            // Animate counting
             animateValue(totalTransactionsEl, 0, totalTransactions, 500);
             animateValue(uniqueClientsEl, 0, uniqueClients, 500);
             
-            // Animate amount
             let currentAmount = 0;
-            const amountStep = totalAmount / 30;
+            const steps = 30;
+            const amountStep = totalAmount / steps;
             const amountTimer = setInterval(() => {
                 currentAmount += amountStep;
                 if (currentAmount >= totalAmount) {

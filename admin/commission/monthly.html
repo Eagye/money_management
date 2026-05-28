@@ -82,9 +82,22 @@
     </style>
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="admin-container">
-        <aside class="admin-sidebar">
-            <div class="admin-sidebar-title">Lucky Susu Ent Admin</div>
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar-title">
+                Lucky Susu Ent Admin
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">×</button>
+            </div>
             <ul class="sidebar-menu">
                 <li class="sidebar-menu-item">
                     <a href="/admin/dashboard.html" class="sidebar-menu-button" style="text-decoration: none; color: inherit;">
@@ -175,6 +188,7 @@
         })();
     </script>
     <script src="/api-client.js"></script>
+    <script src="/admin/mobile-menu.js"></script>
     <script>
         const summaryCard = document.getElementById('summaryCard');
         const totalCommissionEl = document.getElementById('totalCommission');

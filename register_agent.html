@@ -169,6 +169,66 @@
             content: '📋';
             font-size: 16px;
         }
+
+        .password-input-wrap {
+            position: relative;
+        }
+
+        .password-input-wrap .form-input {
+            padding-right: 48px;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease, background 0.2s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .password-toggle-btn:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .password-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            display: block;
+        }
+
+        .password-toggle-btn .icon-eye-off {
+            display: none;
+        }
+
+        .password-toggle-btn .icon-eye-on {
+            display: block;
+        }
+
+        .password-toggle-btn.is-visible .icon-eye-on {
+            display: none;
+        }
+
+        .password-toggle-btn.is-visible .icon-eye-off {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -203,7 +263,20 @@
                         <label for="password" class="form-label">
                             Password <span class="required">*</span>
                         </label>
-                        <input type="password" id="password" class="form-input" placeholder="Create a strong password" autocomplete="new-password" required minlength="6">
+                        <div class="password-input-wrap">
+                            <input type="password" id="password" class="form-input" placeholder="Create a strong password" autocomplete="new-password" required minlength="6">
+                            <button type="button" class="password-toggle-btn" data-target="password" aria-label="Show password" title="Show password">
+                                <svg class="icon-eye-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
                         <span class="error-message" id="passwordError"></span>
                         <div class="form-hint">Password must be at least 6 characters long</div>
                     </div>
@@ -212,7 +285,20 @@
                         <label for="confirmPassword" class="form-label">
                             Confirm Password <span class="required">*</span>
                         </label>
-                        <input type="password" id="confirmPassword" class="form-input" placeholder="Re-enter your password" autocomplete="new-password" required>
+                        <div class="password-input-wrap">
+                            <input type="password" id="confirmPassword" class="form-input" placeholder="Re-enter your password" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Show password" title="Show password">
+                                <svg class="icon-eye-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
                         <span class="error-message" id="confirmPasswordError"></span>
                     </div>
 
@@ -273,12 +359,28 @@
     </div>
 
     <script>
+        function initPasswordToggles() {
+            document.querySelectorAll('.password-toggle-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const input = document.getElementById(btn.getAttribute('data-target'));
+                    if (!input) return;
+                    const isHidden = input.type === 'password';
+                    input.type = isHidden ? 'text' : 'password';
+                    btn.classList.toggle('is-visible', isHidden);
+                    const label = isHidden ? 'Hide password' : 'Show password';
+                    btn.setAttribute('aria-label', label);
+                    btn.setAttribute('title', label);
+                });
+            });
+        }
+
         // Clear form on page load
         window.addEventListener('load', function() {
             const form = document.getElementById('registerForm');
             if (form) {
                 form.reset();
             }
+            initPasswordToggles();
         });
 
         const form = document.getElementById('registerForm');
