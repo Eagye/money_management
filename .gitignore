@@ -25,3 +25,13 @@ Thumbs.db
 # Environment variables
 .env
 
+# Local dev / test scripts (not deployed)
+test_*.js
+test_*.html
+inspect_*.js
+analyze_*.js
+check_*.js
+verify_*.js
+clear_database.js
+clear_rate_limit.js
+

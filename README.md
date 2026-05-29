@@ -241,8 +241,6 @@ The commission system automatically deducts commission when clients make withdra
 - **Automatic Deduction**: Commission is deducted only when a full page (31 boxes) is completed
 - **Tracking**: Cumulative withdrawals tracked per client in `commission_cycles` table
 
-For detailed commission logic, see [COMMISSION_LOGIC_EXPLANATION.md](./COMMISSION_LOGIC_EXPLANATION.md)
-
 ## 📊 API Endpoints
 
 ### Authentication
@@ -323,12 +321,9 @@ lsof -ti:3000 | xargs kill
 - Verify token is being sent in Authorization header
 - Check browser console for errors
 
-## 📚 Documentation
+## 📚 Deployment
 
-- [Commission Logic Explanation](./COMMISSION_LOGIC_EXPLANATION.md)
-- [Implementation Summary](./IMPLEMENTATION_SUMMARY.md)
-- [Production Issues](./PRODUCTION_ISSUES.md)
-- [Commission Scenarios](./COMMISSION_SCENARIOS.md)
+- [Railway deployment guide](./RAILWAY.md)
 
 ## 🤝 Contributing
 
