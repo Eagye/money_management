@@ -247,7 +247,9 @@
                             id: response.data.id,
                             name: response.data.name,
                             email: response.data.email,
-                            contact: response.data.contact
+                            contact: response.data.contact,
+                            isAdmin: !!response.data.isAdmin,
+                            isApproved: response.data.isApproved !== false
                         });
                     } else {
                         localStorage.setItem('user', JSON.stringify(response.data));
