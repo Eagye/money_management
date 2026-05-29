@@ -1,6 +1,6 @@
 // Script to create an admin user
 require('dotenv').config();
-const { initDatabase } = require('./database');
+const { initDatabase, getDbPath } = require('./database');
 const { hashPassword } = require('./auth');
 
 const ADMIN_EMAIL = 'admin@luckysusu.com';
@@ -28,7 +28,7 @@ async function createAdmin() {
             // Update existing admin with correct flags and password
             const sqlite3 = require('sqlite3').verbose();
             const path = require('path');
-            const DB_PATH = path.join(__dirname, 'lucky_susu.db');
+            const DB_PATH = getDbPath();
             const hashedPassword = await hashPassword(ADMIN_PASSWORD);
             
             await new Promise((resolve, reject) => {

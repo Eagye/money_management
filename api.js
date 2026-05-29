@@ -140,7 +140,8 @@ async function handleAPI(req, res) {
                 }
                 
                 // Check disk space (basic check)
-                const dbPath = path.join(__dirname, 'lucky_susu.db');
+                const { getDbPath } = require('./database');
+                const dbPath = getDbPath();
                 let dbSize = 0;
                 try {
                     const stats = fs.statSync(dbPath);

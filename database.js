@@ -1,7 +1,19 @@
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'lucky_susu.db');
+/**
+ * SQLite file path. On Railway, mount a volume and set DATABASE_PATH=/data/lucky_susu.db
+ * so the database survives redeploys (default app filesystem is ephemeral).
+ */
+function getDbPath() {
+    if (process.env.DATABASE_PATH) {
+        return path.resolve(process.env.DATABASE_PATH);
+    }
+    return path.join(__dirname, 'lucky_susu.db');
+}
+
+const DB_PATH = getDbPath();
 
 // Single persistent database connection (connection pooling)
 let dbInstance = null;
@@ -9,6 +21,11 @@ let dbInstance = null;
 // Initialize database and create tables
 function initDatabase() {
     return new Promise((resolve, reject) => {
+        const dbDir = path.dirname(DB_PATH);
+        if (!fs.existsSync(dbDir)) {
+            fs.mkdirSync(dbDir, { recursive: true });
+        }
+
         dbInstance = new sqlite3.Database(DB_PATH, (err) => {
             if (err) {
                 console.error('Error opening database:', err);
@@ -3622,6 +3639,7 @@ const Message = {
 module.exports = {
     initDatabase,
     getDatabase,
+    getDbPath,
     Client,
     Transaction,
     AgentDailyStatus,

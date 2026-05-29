@@ -139,11 +139,13 @@ Before deploying, configure these environment variables in Railway:
 - `ALLOWED_ORIGINS=https://your-public-domain`
 - `LOG_LEVEL=info`
 - `AUTO_OPEN_BROWSER=false`
+- `DATABASE_PATH=/data/lucky_susu.db` (after mounting a volume at `/data`)
 
 Notes:
 
 - Use `.env.example` as the reference template.
-- Ensure your persistent volume includes the SQLite database file if you stay on SQLite.
+- **You do not need Railway PostgreSQL** for this app. SQLite works on Railway if you use a **persistent volume** (see [RAILWAY.md](./RAILWAY.md)).
+- Without a volume, the database file is lost on every redeploy.
 
 ### Access the Application
 
