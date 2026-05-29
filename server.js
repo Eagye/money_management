@@ -23,7 +23,7 @@ const { exec } = require('child_process');
 const zlib = require('zlib');
 const { initDatabase, getDatabase } = require('./database');
 const { handleAPI } = require('./api');
-const { bootstrapAdminIfRequested } = require('./admin_bootstrap');
+const { ensureAdminAccount } = require('./admin_bootstrap');
 
 const PORT = config.port;
 
@@ -129,7 +129,7 @@ const server = http.createServer(async (req, res) => {
 
 // Initialize database and start server
 initDatabase()
-    .then(() => bootstrapAdminIfRequested())
+    .then(() => ensureAdminAccount())
     .then(() => {
         server.listen(PORT, () => {
             logger.info(`Server running at http://localhost:${PORT}/`);

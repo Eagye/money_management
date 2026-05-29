@@ -15,37 +15,57 @@ function run(db, sql, params = []) {
     });
 }
 
+function get(db, sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(row);
+        });
+    });
+}
+
+function getAdminEnv() {
+    return {
+        email: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
+        password: process.env.ADMIN_PASSWORD || '',
+        name: process.env.ADMIN_NAME || 'System Administrator',
+        contact: process.env.ADMIN_CONTACT || '0240000000',
+        validationCard: process.env.ADMIN_VALIDATION_CARD || 'GHA-000000000-0',
+        guarantorNumber: process.env.ADMIN_GUARANTOR_NUMBER || '0240000001',
+        guarantorValidation: process.env.ADMIN_GUARANTOR_VALIDATION || 'GHA-000000001-0'
+    };
+}
+
 /**
  * Delete all admin users and create one admin from ADMIN_* env vars.
  */
 async function resetAndCreateAdmin() {
-    const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
-    const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
-    const adminName = process.env.ADMIN_NAME || 'System Administrator';
-    const adminContact = process.env.ADMIN_CONTACT || '0240000000';
-    const adminValidationCard = process.env.ADMIN_VALIDATION_CARD || 'GHA-000000000-0';
-    const adminGuarantorNumber = process.env.ADMIN_GUARANTOR_NUMBER || '0240000001';
-    const adminGuarantorValidation = process.env.ADMIN_GUARANTOR_VALIDATION || 'GHA-000000001-0';
-
-    if (!adminEmail) {
+    const env = getAdminEnv();
+    if (!env.email) {
         throw new Error('ADMIN_EMAIL is required');
+    }
+    if (!env.password) {
+        throw new Error('ADMIN_PASSWORD is required');
     }
 
     const db = getDatabase();
 
     const removedAdmins = await run(db, 'DELETE FROM users WHERE is_admin = 1');
-    await run(db, 'DELETE FROM users WHERE LOWER(email) = ?', [adminEmail]);
+    await run(db, 'DELETE FROM users WHERE LOWER(email) = ?', [env.email]);
 
-    const hashedPassword = await hashPassword(adminPassword);
+    const hashedPassword = await hashPassword(env.password);
 
     const admin = await User.create({
-        name: adminName,
-        email: adminEmail,
+        name: env.name,
+        email: env.email,
         password: hashedPassword,
-        contact: adminContact.replace(/\D/g, ''),
-        validation_card_number: adminValidationCard.trim().toUpperCase(),
-        guarantor_number: adminGuarantorNumber.replace(/\D/g, ''),
-        guarantor_validation_number: adminGuarantorValidation.trim().toUpperCase(),
+        contact: env.contact.replace(/\D/g, ''),
+        validation_card_number: env.validationCard.trim().toUpperCase(),
+        guarantor_number: env.guarantorNumber.replace(/\D/g, ''),
+        guarantor_validation_number: env.guarantorValidation.trim().toUpperCase(),
         is_admin: true,
         is_approved: true,
         created_by_admin: true
@@ -53,35 +73,95 @@ async function resetAndCreateAdmin() {
 
     return {
         admin,
-        email: adminEmail,
-        password: adminPassword,
+        email: env.email,
+        password: env.password,
         removedAdmins: removedAdmins.changes
     };
 }
 
 /**
- * Run admin reset on server startup when BOOTSTRAP_ADMIN=true (one-time Railway setup).
+ * Create admin only when database has no admin yet.
  */
-async function bootstrapAdminIfRequested() {
-    if (process.env.BOOTSTRAP_ADMIN !== 'true') {
-        return;
+async function createAdminIfMissing() {
+    const env = getAdminEnv();
+    if (!env.email || !env.password) {
+        return null;
     }
 
-    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
-        logger.error('BOOTSTRAP_ADMIN is true but ADMIN_EMAIL or ADMIN_PASSWORD is missing');
-        return;
+    const db = getDatabase();
+    const existingAdmin = await get(db, 'SELECT id FROM users WHERE is_admin = 1 LIMIT 1');
+    if (existingAdmin) {
+        return null;
     }
 
-    const result = await resetAndCreateAdmin();
-    logger.info('Admin bootstrap completed', {
-        email: result.email,
-        userId: result.admin.id,
-        removedAdmins: result.removedAdmins
+    const existingEmail = await User.getByEmail(env.email);
+    if (existingEmail) {
+        await run(
+            db,
+            `UPDATE users
+             SET is_admin = 1, is_approved = 1, created_by_admin = 1, password = ?
+             WHERE id = ?`,
+            [await hashPassword(env.password), existingEmail.id]
+        );
+        logger.info('Promoted existing user to admin and reset password', { email: env.email });
+        return { email: env.email, userId: existingEmail.id, promoted: true };
+    }
+
+    const hashedPassword = await hashPassword(env.password);
+    const admin = await User.create({
+        name: env.name,
+        email: env.email,
+        password: hashedPassword,
+        contact: env.contact.replace(/\D/g, ''),
+        validation_card_number: env.validationCard.trim().toUpperCase(),
+        guarantor_number: env.guarantorNumber.replace(/\D/g, ''),
+        guarantor_validation_number: env.guarantorValidation.trim().toUpperCase(),
+        is_admin: true,
+        is_approved: true,
+        created_by_admin: true
     });
-    logger.warn('Remove BOOTSTRAP_ADMIN from environment after first successful deploy');
+
+    logger.info('Created initial admin (database had no admin)', {
+        email: env.email,
+        userId: admin.id
+    });
+
+    return { email: env.email, userId: admin.id, created: true };
+}
+
+/**
+ * On startup: reset admin if BOOTSTRAP_ADMIN=true, else create admin when none exists.
+ */
+async function ensureAdminAccount() {
+    const env = getAdminEnv();
+
+    if (process.env.BOOTSTRAP_ADMIN === 'true') {
+        if (!env.email || !env.password) {
+            logger.error('BOOTSTRAP_ADMIN is true but ADMIN_EMAIL or ADMIN_PASSWORD is missing');
+            return;
+        }
+
+        const result = await resetAndCreateAdmin();
+        logger.info('Admin reset via BOOTSTRAP_ADMIN', {
+            email: result.email,
+            userId: result.admin.id,
+            removedAdmins: result.removedAdmins
+        });
+        logger.warn('Set BOOTSTRAP_ADMIN=false after you confirm login works');
+        return;
+    }
+
+    if (!env.email || !env.password) {
+        logger.warn('ADMIN_EMAIL or ADMIN_PASSWORD not set; admin auto-create skipped');
+        return;
+    }
+
+    await createAdminIfMissing();
 }
 
 module.exports = {
     resetAndCreateAdmin,
-    bootstrapAdminIfRequested
+    createAdminIfMissing,
+    ensureAdminAccount,
+    bootstrapAdminIfRequested: ensureAdminAccount
 };
