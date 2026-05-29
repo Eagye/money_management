@@ -1,113 +1,81 @@
-// Script to create an admin user
+/**
+ * Remove all admin users and create a single admin from environment variables.
+ *
+ * Required: ADMIN_EMAIL
+ * Optional: ADMIN_PASSWORD (generated if omitted), ADMIN_NAME, ADMIN_CONTACT, etc.
+ *
+ * Railway: set ADMIN_EMAIL and ADMIN_PASSWORD in Variables, then run:
+ *   node create_admin.js
+ */
 require('dotenv').config();
-const { initDatabase, getDbPath } = require('./database');
+const crypto = require('crypto');
+const { initDatabase, getDatabase, User } = require('./database');
 const { hashPassword } = require('./auth');
 
-const ADMIN_EMAIL = 'admin@luckysusu.com';
-const ADMIN_PASSWORD = 'Admin@123';
-const ADMIN_NAME = 'System Administrator';
-const ADMIN_CONTACT = '0240000000';
-const ADMIN_VALIDATION_CARD = 'GHA-000000000-0';
-const ADMIN_GUARANTOR_NUMBER = '0240000001';
-const ADMIN_GUARANTOR_VALIDATION = 'GHA-000000001-0';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
+const ADMIN_NAME = process.env.ADMIN_NAME || 'System Administrator';
+const ADMIN_CONTACT = process.env.ADMIN_CONTACT || '0240000000';
+const ADMIN_VALIDATION_CARD = process.env.ADMIN_VALIDATION_CARD || 'GHA-000000000-0';
+const ADMIN_GUARANTOR_NUMBER = process.env.ADMIN_GUARANTOR_NUMBER || '0240000001';
+const ADMIN_GUARANTOR_VALIDATION = process.env.ADMIN_GUARANTOR_VALIDATION || 'GHA-000000001-0';
 
-async function createAdmin() {
-    try {
-        // Initialize database
-        await initDatabase();
-        
-        // Import database functions
-        const { User } = require('./database');
-        
-        // Check if admin already exists
-        const existingAdmin = await User.getByEmail(ADMIN_EMAIL);
-        if (existingAdmin) {
-            console.log('⚠️  Admin user already exists with email:', ADMIN_EMAIL);
-            console.log('   Updating admin account with correct flags and password...');
-            
-            // Update existing admin with correct flags and password
-            const sqlite3 = require('sqlite3').verbose();
-            const path = require('path');
-            const DB_PATH = getDbPath();
-            const hashedPassword = await hashPassword(ADMIN_PASSWORD);
-            
-            await new Promise((resolve, reject) => {
-                const db = new sqlite3.Database(DB_PATH, (err) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    
-                    db.run(
-                        `UPDATE users 
-                         SET password = ?, 
-                             is_admin = 1, 
-                             is_approved = 1, 
-                             created_by_admin = 1,
-                             name = ?
-                         WHERE email = ?`,
-                        [hashedPassword, ADMIN_NAME, ADMIN_EMAIL.toLowerCase()],
-                        function(err) {
-                            db.close();
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve();
-                            }
-                        }
-                    );
-                });
-            });
-            
-            console.log('\n✅ Admin account updated successfully!');
-            console.log('\n📋 Admin Credentials:');
-            console.log('   Email:', ADMIN_EMAIL);
-            console.log('   Password:', ADMIN_PASSWORD);
-            console.log('   Name:', ADMIN_NAME);
-            console.log('\n⚠️  IMPORTANT: Save these credentials securely!');
-            console.log('   You can now login at: http://localhost:3000/index.html');
-            console.log('   Then navigate to: http://localhost:3000/admin/dashboard.html\n');
-            process.exit(0);
-            return;
-        }
-        
-        // Hash the password
-        console.log('🔐 Hashing password...');
-        const hashedPassword = await hashPassword(ADMIN_PASSWORD);
-        
-        // Create admin user with admin flags
-        console.log('👤 Creating admin user...');
-        const adminData = {
-            name: ADMIN_NAME,
-            email: ADMIN_EMAIL.toLowerCase(),
-            password: hashedPassword,
-            contact: ADMIN_CONTACT,
-            validation_card_number: ADMIN_VALIDATION_CARD,
-            guarantor_number: ADMIN_GUARANTOR_NUMBER,
-            guarantor_validation_number: ADMIN_GUARANTOR_VALIDATION,
-            is_admin: true,
-            is_approved: true,
-            created_by_admin: true  // Set to true for the initial admin account
-        };
-        
-        const admin = await User.create(adminData);
-        
-        console.log('\n✅ Admin user created successfully!');
-        console.log('\n📋 Admin Credentials:');
-        console.log('   Email:', ADMIN_EMAIL);
-        console.log('   Password:', ADMIN_PASSWORD);
-        console.log('   Name:', ADMIN_NAME);
-        console.log('\n⚠️  IMPORTANT: Save these credentials securely!');
-        console.log('   You can now login at: http://localhost:3000/index.html');
-        console.log('   Then navigate to: http://localhost:3000/admin/dashboard.html\n');
-        
-        process.exit(0);
-    } catch (error) {
-        console.error('❌ Error creating admin user:', error);
-        process.exit(1);
-    }
+function run(db, sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function onRun(err) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve({ changes: this.changes });
+        });
+    });
 }
 
-// Run the script
-createAdmin();
+async function createAdmin() {
+    if (!ADMIN_EMAIL) {
+        console.error('ADMIN_EMAIL is required in .env or environment variables.');
+        process.exit(1);
+    }
 
+    await initDatabase();
+    const db = getDatabase();
+
+    const removedAdmins = await run(db, 'DELETE FROM users WHERE is_admin = 1');
+    const removedDuplicate = await run(db, 'DELETE FROM users WHERE LOWER(email) = ?', [ADMIN_EMAIL]);
+
+    console.log(`Removed ${removedAdmins.changes} admin account(s).`);
+    if (removedDuplicate.changes > 0) {
+        console.log(`Removed existing user with email ${ADMIN_EMAIL} (if any).`);
+    }
+
+    const hashedPassword = await hashPassword(ADMIN_PASSWORD);
+
+    const admin = await User.create({
+        name: ADMIN_NAME,
+        email: ADMIN_EMAIL,
+        password: hashedPassword,
+        contact: ADMIN_CONTACT.replace(/\D/g, ''),
+        validation_card_number: ADMIN_VALIDATION_CARD.trim().toUpperCase(),
+        guarantor_number: ADMIN_GUARANTOR_NUMBER.replace(/\D/g, ''),
+        guarantor_validation_number: ADMIN_GUARANTOR_VALIDATION.trim().toUpperCase(),
+        is_admin: true,
+        is_approved: true,
+        created_by_admin: true
+    });
+
+    console.log('\n✅ New admin created successfully!');
+    console.log('\n📋 Admin credentials (save these now):');
+    console.log('   Email:   ', ADMIN_EMAIL);
+    console.log('   Password:', ADMIN_PASSWORD);
+    console.log('   User ID: ', admin.id);
+    console.log('\nOn Railway: set ADMIN_EMAIL and ADMIN_PASSWORD in Variables, redeploy, then run:');
+    console.log('   node create_admin.js\n');
+
+    process.exit(0);
+}
+
+createAdmin().catch((error) => {
+    console.error('❌ Error creating admin:', error.message);
+    process.exit(1);
+});
