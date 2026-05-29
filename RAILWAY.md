@@ -28,11 +28,16 @@ The important part: Railway’s app disk is **ephemeral** (wiped on redeploy). P
 
 4. **Redeploy** after adding the volume and variables.
 
-5. **Create admin** (one time), using Railway shell after setting `ADMIN_EMAIL` and `ADMIN_PASSWORD` in Variables:
+5. **Create admin** (one time) — choose one method:
+
+   **A. No SSH (easiest)** — add variable `BOOTSTRAP_ADMIN=true`, redeploy once, then **remove** that variable:
+   - Requires `ADMIN_EMAIL` and `ADMIN_PASSWORD` already set
+   - On startup the app deletes old admins and creates the new admin automatically
+
+   **B. Railway SSH / CLI** (if your account is linked):
    ```bash
    node create_admin.js
    ```
-   This removes any existing admin users and creates one new admin with your configured password.
 
 6. **Arkesel webhook** (optional): point delivery callback to  
    `https://your-app.up.railway.app/api/webhooks/arkesel/delivery`
