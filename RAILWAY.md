@@ -21,7 +21,8 @@ The important part: Railway’s app disk is **ephemeral** (wiped on redeploy). P
    | `NODE_ENV` | `production` |
    | `PORT` | `3000` (Railway sets `PORT` automatically; app reads it) |
    | `ALLOWED_ORIGINS` | `https://your-app.up.railway.app` |
-   | `ADMIN_EMAIL` | your admin email |
+   | `ADMIN_EMAIL` | `admin@luckysusu.com` (or your admin email) |
+   | `ADMIN_PASSWORD` | strong password (never commit to git) |
    | `SYSTEM_API_KEY` | Arkesel API key |
    | `SMS_API_URL` | `https://sms.arkesel.com/api/v2/sms/send` |
    | `SMS_SENDER_ID` | your approved sender ID |
