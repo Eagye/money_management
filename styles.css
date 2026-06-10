@@ -934,6 +934,123 @@ body.agent-layout {
     resize: vertical;
 }
 
+/* System toast notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: min(420px, calc(100vw - 40px));
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast.hide {
+    opacity: 0;
+    transform: translateX(24px);
+}
+
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.toast-error .toast-icon {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.toast-warning .toast-icon {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.toast-info .toast-icon {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.toast-success {
+    border-left: 4px solid #16a34a;
+}
+
+.toast-error {
+    border-left: 4px solid #dc2626;
+}
+
+.toast-warning {
+    border-left: 4px solid #d97706;
+}
+
+.toast-info {
+    border-left: 4px solid #2563eb;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text-primary);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin: -2px 0 0 4px;
+}
+
+.toast-close:hover {
+    color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+    .toast-container {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
+    }
+}
+
 /* Responsive Dialog */
 @media (max-width: 480px) {
     .dialog-box {

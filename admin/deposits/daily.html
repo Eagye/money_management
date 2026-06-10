@@ -1052,6 +1052,8 @@
             }
         })();
     </script>
+    <script src="/dialog.js"></script>
+    <script src="/notifications.js"></script>
     <script src="/api-client.js"></script>
     <script src="/admin/mobile-menu.js"></script>
     <script>
@@ -1579,23 +1581,33 @@
                     throw new Error(response?.error || 'Failed to update status');
                 }
 
-                if (typeof Dialog !== 'undefined') {
+                const systemMessage = response?.notification?.message
+                    || (action === 'approve'
+                        ? 'Deposits approved successfully.'
+                        : 'Deposits rejected and removed for this day.');
+
+                if (typeof Toast !== 'undefined') {
+                    Toast.show(systemMessage, action === 'approve' ? 'success' : 'warning');
+                } else if (typeof Dialog !== 'undefined') {
                     if (action === 'approve') {
-                        Dialog.success('Daily deposits have been approved successfully.', 'Success');
+                        Dialog.success(systemMessage, 'Approved');
                     } else {
-                        Dialog.warning('Daily deposits have been rejected successfully. All transactions for this day have been removed.', 'Rejected');
+                        Dialog.warning(systemMessage, 'Rejected');
                     }
                 } else {
-                    alert(action === 'approve' ? 'Daily deposits have been approved successfully.' : 'Daily deposits have been rejected successfully. All transactions for this day have been removed.');
+                    alert(systemMessage);
                 }
 
                 await loadDailyDeposits(currentDate, true);
             } catch (error) {
                 console.error('Status update error:', error);
-                if (typeof Dialog !== 'undefined') {
-                    Dialog.error(error.message || 'Failed to update status', 'Error');
+                const errorMessage = error.message || 'Failed to update status';
+                if (typeof Toast !== 'undefined') {
+                    Toast.error(errorMessage);
+                } else if (typeof Dialog !== 'undefined') {
+                    Dialog.error(errorMessage, 'Error');
                 } else {
-                    alert(error.message || 'Failed to update status');
+                    alert(errorMessage);
                 }
             } finally {
                 statusActionInProgress = false;

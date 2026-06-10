@@ -9,7 +9,14 @@ const {
 } = require('./auth');
 const logger = require('./logger');
 const { getConfig } = require('./config');
-const { sendTransactionMessage, sendWelcomeMessage } = require('./messaging');
+const {
+    sendTransactionMessage,
+    sendWelcomeMessage,
+    sendDepositApprovalNotifications,
+    sendDepositRejectionNotification,
+    buildApprovalNotificationMessage,
+    buildRejectionNotificationMessage
+} = require('./messaging');
 
 // Load environment variables
 require('dotenv').config();
@@ -509,11 +516,10 @@ async function handleAPI(req, res) {
 
                     await AgentDailyStatus.upsertPending(req.user.id, transaction_date);
 
-                    // Send message to client about the transaction (deposit/withdrawal)
+                    // Withdrawals notify immediately; deposits notify after admin approval
                     try {
-                        // Get updated client info with new balance
                         const updatedClient = await Client.getById(parseInt(client_id), req.user.id);
-                        if (updatedClient && ['deposit', 'withdrawal'].includes(effectiveTransactionType)) {
+                        if (updatedClient && effectiveTransactionType === 'withdrawal') {
                             await sendTransactionMessage({
                                 clientId: parseInt(client_id),
                                 transactionId: transaction.id,
@@ -1751,10 +1757,35 @@ async function handleAPI(req, res) {
                         return;
                     }
 
+                    let notificationSummary = null;
+                    let notificationMessage = '';
+
                     if (action === 'approve') {
                         await AgentDailyStatus.approveDay(agentId, targetDate, req.user.id, note);
+                        try {
+                            notificationSummary = await sendDepositApprovalNotifications(agentId, targetDate);
+                            notificationMessage = buildApprovalNotificationMessage(notificationSummary);
+                        } catch (notifyErr) {
+                            logger.error('Deposit approval notifications failed', {
+                                error: notifyErr.message,
+                                agentId,
+                                date: targetDate
+                            });
+                            notificationMessage = 'Deposits approved, but some notifications could not be sent.';
+                        }
                     } else {
                         await AgentDailyStatus.rejectDay(agentId, targetDate, req.user.id, note);
+                        try {
+                            notificationSummary = await sendDepositRejectionNotification(agentId, targetDate, note);
+                            notificationMessage = buildRejectionNotificationMessage(notificationSummary);
+                        } catch (notifyErr) {
+                            logger.error('Deposit rejection notification failed', {
+                                error: notifyErr.message,
+                                agentId,
+                                date: targetDate
+                            });
+                            notificationMessage = 'Deposits rejected. Agent notification could not be sent.';
+                        }
                     }
 
                     const statuses = await AgentDailyStatus.getStatusesByDate(targetDate);
@@ -1767,6 +1798,10 @@ async function handleAPI(req, res) {
                             date: targetDate,
                             status: statuses[String(agentId)]?.status || action,
                             statuses
+                        },
+                        notification: {
+                            message: notificationMessage,
+                            summary: notificationSummary
                         }
                     }));
                 } catch (err) {

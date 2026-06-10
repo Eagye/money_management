@@ -2369,6 +2369,34 @@ const Transaction = {
         });
     },
 
+    getAgentDepositsForDate: (agentId, date) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+            db.all(
+                `SELECT 
+                    t.id,
+                    t.client_id,
+                    t.amount,
+                    t.transaction_date,
+                    c.name as client_name,
+                    c.phone as client_phone,
+                    c.current_balance
+                 FROM transactions t
+                 JOIN clients c ON t.client_id = c.id
+                 WHERE t.agent_id = ? AND t.transaction_date = ? AND t.transaction_type = 'deposit'
+                 ORDER BY t.created_at ASC`,
+                [agentId, date],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows || []);
+                    }
+                }
+            );
+        });
+    },
+
     deleteAgentTransactionsForDate: (agentId, date) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();

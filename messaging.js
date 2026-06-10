@@ -1,5 +1,31 @@
-const { Message } = require('./database');
+const { Message, Transaction, User } = require('./database');
 const logger = require('./logger');
+
+function formatDisplayDate(date) {
+    return new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+async function deliverMessageRecord(messageData) {
+    const message = await Message.create({
+        ...messageData,
+        status: 'pending'
+    });
+
+    const sendResult = await sendSMSWithDetails(messageData.phone_number, messageData.message);
+    const providerMessageId = extractArkeselMessageId(sendResult.data);
+    await Message.updateStatus(message.id, sendResult.success ? 'sent' : 'failed', {
+        providerMessageId,
+        providerResponse: sendResult,
+        sentAt: sendResult.success ? new Date().toISOString() : null,
+        failedAt: sendResult.success ? null : new Date().toISOString()
+    });
+
+    return { message, sendResult };
+}
 
 /**
  * Send a message to a client about a transaction
@@ -47,27 +73,16 @@ async function sendTransactionMessage(options) {
     }
 
     try {
-        // Create message record in database
-        const message = await Message.create({
+        const { message } = await deliverMessageRecord({
             client_id: clientId,
             transaction_id: transactionId || null,
             message_type: 'transaction',
             message: messageText,
-            phone_number: phoneNumber,
-            status: 'pending'
+            phone_number: phoneNumber
         });
 
-        const sendResult = await sendSMSWithDetails(phoneNumber, messageText);
-        const providerMessageId = extractArkeselMessageId(sendResult.data);
-        await Message.updateStatus(message.id, sendResult.success ? 'sent' : 'failed', {
-            providerMessageId,
-            providerResponse: sendResult,
-            sentAt: sendResult.success ? new Date().toISOString() : null,
-            failedAt: sendResult.success ? null : new Date().toISOString()
-        });
-        
         console.log(`Message queued for client ${clientId} (${phoneNumber}): ${messageText.substring(0, 50)}...`);
-        
+
         return message;
     } catch (error) {
         console.error('Error sending transaction message:', error);
@@ -106,27 +121,16 @@ async function sendWelcomeMessage(options) {
     const messageText = `Hello ${clientName}, welcome to Lucky Susu! Your account has been successfully created on ${today}. Your savings rate is ${formattedRate} per deposit. We're excited to help you reach your financial goals. Thank you for choosing us!`;
 
     try {
-        // Create message record in database
-        const message = await Message.create({
+        const { message } = await deliverMessageRecord({
             client_id: clientId,
             transaction_id: null,
             message_type: 'welcome',
             message: messageText,
-            phone_number: phoneNumber,
-            status: 'pending'
+            phone_number: phoneNumber
         });
 
-        const sendResult = await sendSMSWithDetails(phoneNumber, messageText);
-        const providerMessageId = extractArkeselMessageId(sendResult.data);
-        await Message.updateStatus(message.id, sendResult.success ? 'sent' : 'failed', {
-            providerMessageId,
-            providerResponse: sendResult,
-            sentAt: sendResult.success ? new Date().toISOString() : null,
-            failedAt: sendResult.success ? null : new Date().toISOString()
-        });
-        
         console.log(`Welcome message queued for client ${clientId} (${phoneNumber}): ${messageText.substring(0, 50)}...`);
-        
+
         return message;
     } catch (error) {
         console.error('Error sending welcome message:', error);
@@ -233,6 +237,110 @@ function normalizeGhanaNumber(phoneNumber) {
     return digits;
 }
 
+/**
+ * Notify clients and agent when admin approves daily deposits
+ */
+async function sendDepositApprovalNotifications(agentId, date) {
+    const deposits = await Transaction.getAgentDepositsForDate(agentId, date);
+    const displayDate = formatDisplayDate(date);
+    const result = {
+        clients_notified: 0,
+        clients_failed: 0,
+        agent_notified: false,
+        total_deposits: deposits.length
+    };
+
+    for (const deposit of deposits) {
+        if (!deposit.client_phone) {
+            result.clients_failed += 1;
+            continue;
+        }
+
+        const formattedAmount = `₵${parseFloat(deposit.amount).toFixed(2)}`;
+        const formattedBalance = `₵${parseFloat(deposit.current_balance).toFixed(2)}`;
+        const messageText = `Hello ${deposit.client_name}, your deposit of ${formattedAmount} for ${displayDate} has been confirmed by Lucky Susu. Your current balance is ${formattedBalance}. Thank you for saving with us!`;
+
+        try {
+            const { sendResult } = await deliverMessageRecord({
+                client_id: deposit.client_id,
+                transaction_id: deposit.id,
+                message_type: 'deposit_approval',
+                message: messageText,
+                phone_number: deposit.client_phone
+            });
+            if (sendResult.success) {
+                result.clients_notified += 1;
+            } else {
+                result.clients_failed += 1;
+            }
+        } catch (error) {
+            logger.error('Failed to send deposit approval SMS', {
+                error: error.message,
+                clientId: deposit.client_id,
+                transactionId: deposit.id
+            });
+            result.clients_failed += 1;
+        }
+    }
+
+    try {
+        const agent = await User.getById(agentId);
+        if (agent?.contact) {
+            const totalAmount = deposits.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+            const formattedTotal = `₵${totalAmount.toFixed(2)}`;
+            const agentMessage = `Hello ${agent.name}, your daily deposits for ${displayDate} (${deposits.length} deposit(s), total ${formattedTotal}) have been approved by Lucky Susu admin.`;
+            const sendResult = await sendSMSWithDetails(agent.contact, agentMessage);
+            result.agent_notified = sendResult.success;
+        }
+    } catch (error) {
+        logger.error('Failed to send agent deposit approval SMS', {
+            error: error.message,
+            agentId
+        });
+    }
+
+    return result;
+}
+
+/**
+ * Notify agent when admin rejects daily deposits
+ */
+async function sendDepositRejectionNotification(agentId, date, note) {
+    const agent = await User.getById(agentId);
+    if (!agent?.contact) {
+        return { agent_notified: false };
+    }
+
+    const displayDate = formatDisplayDate(date);
+    let messageText = `Hello ${agent.name}, your daily deposits for ${displayDate} were rejected by Lucky Susu admin. Recorded deposits for that day have been removed.`;
+    if (note) {
+        messageText += ` Reason: ${note}`;
+    }
+
+    const sendResult = await sendSMSWithDetails(agent.contact, messageText);
+    return { agent_notified: sendResult.success };
+}
+
+function buildApprovalNotificationMessage(summary) {
+    const parts = [`Deposits approved for ${summary.total_deposits} client(s).`];
+    if (summary.clients_notified > 0) {
+        parts.push(`${summary.clients_notified} SMS confirmation(s) sent.`);
+    }
+    if (summary.agent_notified) {
+        parts.push('Agent notified.');
+    }
+    if (summary.clients_failed > 0) {
+        parts.push(`${summary.clients_failed} SMS could not be sent.`);
+    }
+    return parts.join(' ');
+}
+
+function buildRejectionNotificationMessage(summary) {
+    return summary.agent_notified
+        ? 'Deposits rejected and removed. Agent notified via SMS.'
+        : 'Deposits rejected and removed for this day.';
+}
+
 function extractArkeselMessageId(providerData) {
     if (!providerData || typeof providerData !== 'object') {
         return null;
@@ -244,6 +352,10 @@ function extractArkeselMessageId(providerData) {
 module.exports = {
     sendTransactionMessage,
     sendWelcomeMessage,
+    sendDepositApprovalNotifications,
+    sendDepositRejectionNotification,
+    buildApprovalNotificationMessage,
+    buildRejectionNotificationMessage,
     sendSMS,
     sendSMSWithDetails
 };
