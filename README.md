@@ -1,6 +1,6 @@
 # Lucky Susu Ent - Money Management System
 
-A comprehensive money management application for tracking client deposits, withdrawals, balances, and commission calculations. Built for managing Susu (rotating savings) operations with agent and admin capabilities.
+A comprehensive money management application for tracking client deposits, withdrawals, and balances. Built for managing Susu (rotating savings) operations with agent and admin capabilities.
 
 ## 🚀 Features
 
@@ -8,7 +8,6 @@ A comprehensive money management application for tracking client deposits, withd
 - **Client Management**: Register and manage clients with deposits and withdrawals
 - **Transaction Tracking**: Record deposits and withdrawals with date tracking
 - **Balance Management**: Automatic balance calculations and updates
-- **Commission System**: Automatic commission deduction (31st box) when clients complete withdrawal cycles
 - **Agent Management**: Multi-agent support with approval workflow
 - **Admin Dashboard**: Comprehensive admin panel with analytics and reporting
 
@@ -171,10 +170,6 @@ mc/
 │   │   ├── daily.html
 │   │   ├── weekly.html
 │   │   └── monthly.html
-│   └── commission/            # Commission reports
-│       ├── daily.html
-│       ├── weekly.html
-│       └── monthly.html
 ├── api.js                     # API route handlers
 ├── api-client.js              # Frontend API client
 ├── auth.js                    # Authentication utilities
@@ -232,14 +227,13 @@ All API endpoints (except `/api/auth/register` and `/api/auth/login`) require au
 Authorization: Bearer <JWT_TOKEN>
 ```
 
-## 💰 Commission System
+## 💰 Box commission (withdrawals)
 
-The commission system automatically deducts commission when clients make withdrawals:
-
-- **Commission Threshold**: 31 × client_rate (one full page)
-- **Commission Amount**: Number of completed pages × client_rate
-- **Automatic Deduction**: Commission is deducted only when a full page (31 boxes) is completed
-- **Tracking**: Cumulative withdrawals tracked per client in `commission_cycles` table
+- **Box rate**: per-box value set at registration (`clients.rate`)
+- **Booklet page**: 31 boxes
+- **Active boxes** = lifetime deposit boxes − withdrawn boxes − commission boxes
+- **Commission**: 1 box per completed page; incomplete page charges 1 box unless **deferral** is active
+- **Withdrawal amount** entered in the UI is the **net cash payout** to the client; commission is deducted in addition
 
 ## 📊 API Endpoints
 
@@ -269,7 +263,6 @@ The commission system automatically deducts commission when clients make withdra
 - `GET /api/admin/deposits/weekly` - Weekly deposits report
 - `GET /api/admin/deposits/monthly` - Monthly deposits report
 - `GET /api/admin/withdrawals/daily` - Daily withdrawals report
-- `GET /api/admin/commission/daily` - Daily commission report
 
 See `api.js` for complete API documentation.
 
@@ -279,7 +272,6 @@ See `api.js` for complete API documentation.
 - **users**: Agent/admin accounts
 - **clients**: Client information
 - **transactions**: Deposit/withdrawal records
-- **commission_cycles**: Commission tracking per client
 - **agent_daily_status**: Daily deposit approval status
 
 The database is automatically initialized on first server start.

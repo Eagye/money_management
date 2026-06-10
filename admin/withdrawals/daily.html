@@ -1570,17 +1570,14 @@
                             }
                             
                             const clientRate = Math.max(0, parseFloat(selectedClient.rate) || 0);
-                            // Show selected client info with commission context
                             selectedClientInfo.innerHTML = `
                                 <strong>Selected:</strong> ${escapeHtml(selectedClient.name)} (${formatPhone(selectedClient.phone)})<br>
                                 <strong>Agent:</strong> ${escapeHtml(selectedClient.agent_name || 'Unknown')}<br>
                                 <strong>Balance:</strong> ${formatCurrency(selectedClient.current_balance || 0)}<br>
-                                <strong>Rate:</strong> ${formatCurrency(clientRate)}<br>
-                                <strong>Commission Threshold (31 boxes):</strong> ${formatCurrency(clientRate)}<br>
-                                <div style="margin-top:6px; font-size:12px; color: var(--text-secondary);">
-                                    Commission is tracked cumulatively. The system will automatically deduct the client's rate as commission when cumulative withdrawals reach the threshold (₵${clientRate.toFixed(2)}). If this withdrawal doesn't reach the threshold, it will be tracked until subsequent withdrawals meet the requirement.
-                                </div>
+                                <strong>Box rate:</strong> ${formatCurrency(clientRate)}<br>
+                                <span id="selectedClientBoxSummary" style="font-size:12px; color: var(--text-secondary);">Loading box account...</span>
                             `;
+                            loadSelectedClientBoxSummary(selectedClient.id, parseInt(agentSelect.value));
                             selectedClientInfo.classList.add('show');
                             
                             // Auto-update receiver if "Customer" is selected
@@ -2256,37 +2253,41 @@
                     }
                 }
 
-                // Check balance using selectedClient
-                // Note: Commission is tracked cumulatively and may not be deducted immediately
-                // We check for withdrawal amount only; backend handles commission logic
+                let withdrawalPreview = null;
+                if (typeof AdminAPI !== 'undefined' && AdminAPI.previewWithdrawal) {
+                    try {
+                        const previewResponse = await AdminAPI.previewWithdrawal({
+                            client_id: clientId,
+                            agent_id: agentId,
+                            amount
+                        });
+                        if (!previewResponse?.success) {
+                            throw new Error(previewResponse?.error || 'Failed to calculate withdrawal');
+                        }
+                        withdrawalPreview = previewResponse.data;
+                    } catch (previewError) {
+                        if (typeof Dialog !== 'undefined') {
+                            Dialog.error(previewError.message || 'Failed to calculate withdrawal', 'Withdrawal Error');
+                        } else {
+                            alert(previewError.message || 'Failed to calculate withdrawal');
+                        }
+                        isCreatingWithdrawal = false;
+                        return;
+                    }
+                }
+
                 const clientBalance = selectedClient ? (selectedClient.current_balance || 0) : 0;
-                console.log('💰 Checking balance - Client balance:', clientBalance, 'Amount:', amount);
-                if (selectedClient && clientBalance < amount) {
+                const totalDeduction = withdrawalPreview?.withdrawal?.total_deduction || amount;
+                console.log('💰 Checking balance - Client balance:', clientBalance, 'Total deduction:', totalDeduction);
+                if (selectedClient && clientBalance + 0.001 < totalDeduction) {
                     console.log('❌ Insufficient balance');
                     if (typeof Dialog !== 'undefined') {
-                        Dialog.error(`Insufficient balance. ${selectedClient.name} needs ${formatCurrency(amount)} for withdrawal but only has ${formatCurrency(clientBalance)}.`, 'Insufficient Balance');
+                        Dialog.error(`Insufficient balance. Total deduction is ${formatCurrency(totalDeduction)} but balance is ${formatCurrency(clientBalance)}.`, 'Insufficient Balance');
                     }
                     isCreatingWithdrawal = false;
                     return;
                 }
                 console.log('✅ Balance check passed');
-
-                // Calculate potential commission amount
-                // Note: Commission is calculated on the backend based on cumulative withdrawals
-                // For the confirmation dialog, we estimate based on whether withdrawal would trigger commission
-                // The actual commission deduction is handled by the backend
-                const clientRate = selectedClient ? (parseFloat(selectedClient.rate) || 0) : 0;
-                
-                // Check if withdrawal would leave balance less than commission (indicates commission might be deducted)
-                // If client is withdrawing all/most of balance, commission will likely be deducted
-                let commissionAmount = 0;
-                const balanceAfterWithdrawal = clientBalance - amount;
-                if (balanceAfterWithdrawal < clientRate && clientRate > 0) {
-                    // If withdrawing all/most, commission will likely be deducted
-                    commissionAmount = clientRate;
-                }
-                // Note: We can't accurately predict commission without checking cumulative withdrawals
-                // The backend will handle the actual commission calculation based on cumulative withdrawal tracking
 
                 // Show confirmation dialog
                 console.log('📋 About to show confirmation dialog');
@@ -2294,7 +2295,6 @@
                 console.log('📋 Receiver details:', receiverDetails);
                 console.log('📋 Selected client:', selectedClient);
                 console.log('📋 Amount:', amount);
-                console.log('📋 Potential commission:', commissionAmount);
                 
                 try {
                     // Ensure receiverDetails is an object
@@ -2302,7 +2302,7 @@
                         receiverDetails = { name: '', contact: '' };
                     }
                     
-                    const confirmed = await showConfirmationDialog(selectedClient, amount, paymentReceiver, receiverDetails, commissionAmount);
+                    const confirmed = await showConfirmationDialog(selectedClient, amount, paymentReceiver, receiverDetails, withdrawalPreview);
                     console.log('📋 Confirmation result:', confirmed);
                     if (!confirmed) {
                         console.log('❌ User cancelled confirmation');
@@ -2420,10 +2420,35 @@
                 }
             });
 
-            function showConfirmationDialog(client, amount, receiver, receiverDetails, commissionAmount = 0) {
+            async function loadSelectedClientBoxSummary(clientId, agentId) {
+                const summaryEl = document.getElementById('selectedClientBoxSummary');
+                if (!summaryEl || !clientId || !agentId) {
+                    return;
+                }
+                if (typeof ClientAPI !== 'undefined' && ClientAPI.getBoxAccount) {
+                    try {
+                        const response = await ClientAPI.getBoxAccount(clientId);
+                        if (response?.success && response.data) {
+                            const ledger = response.data.ledger || {};
+                            summaryEl.textContent = `${ledger.active_boxes || 0} active boxes (${ledger.full_pages || 0} full + ${ledger.partial_boxes || 0} partial). Max payout ${formatCurrency(response.data.max_payout || 0)}. Deferral: ${response.data.deferral_active ? 'On' : 'Off'}.`;
+                        }
+                    } catch (error) {
+                        summaryEl.textContent = 'Box account unavailable.';
+                    }
+                }
+            }
+
+            function showConfirmationDialog(client, amount, receiver, receiverDetails, withdrawalPreview = null) {
                 return new Promise((resolve) => {
+                    const preview = withdrawalPreview?.withdrawal;
+                    const commissionAmount = preview?.commission_amount || 0;
+                    const totalDeduction = preview?.total_deduction || amount;
+                    const payout = preview?.payout || amount;
+
                     if (typeof Dialog === 'undefined') {
-                        const confirmed = window.confirm(`Create withdrawal of ${formatCurrency(amount)} for ${client.name}?\nAuto commission: ${formatCurrency(commissionAmount)}\nTotal deduction: ${formatCurrency(amount + commissionAmount)}`);
+                        const confirmed = window.confirm(
+                            `Payout ${formatCurrency(payout)} for ${client.name}?\nCommission: ${formatCurrency(commissionAmount)}\nTotal deduction: ${formatCurrency(totalDeduction)}`
+                        );
                         resolve(confirmed);
                         return;
                     }
@@ -2457,9 +2482,10 @@
                                     <p style="margin:0;">Please confirm the withdrawal details:</p>
                                     <div style="background:var(--background); padding:12px; border-radius:6px; border:1px solid var(--border-color);">
                                         <div style="margin-bottom:8px;"><strong>Client:</strong> ${escapeHtml(client.name)}</div>
-                                        <div style="margin-bottom:8px;"><strong>Amount:</strong> ${formatCurrency(amount)}</div>
-                                        <div style="margin-bottom:8px;"><strong>Auto Commission:</strong> ${formatCurrency(commissionAmount)}</div>
-                                        <div style="margin-bottom:8px;"><strong>Total Deduction:</strong> ${formatCurrency(amount + commissionAmount)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Cash payout:</strong> ${formatCurrency(payout)}</div>
+                                        <div style="margin-bottom:8px;"><strong>Commission:</strong> ${formatCurrency(commissionAmount)} (${preview?.commission_boxes || 0} box${(preview?.commission_boxes || 0) === 1 ? '' : 'es'})</div>
+                                        <div style="margin-bottom:8px;"><strong>Total deduction:</strong> ${formatCurrency(totalDeduction)}</div>
+                                        ${preview ? `<div style="margin-bottom:8px; font-size:12px; color:var(--text-secondary);">Withdrawing ${preview.boxes_to_withdraw} boxes (${preview.withdrawal_full_pages} full page(s), ${preview.withdrawal_partial_boxes} partial)</div>` : ''}
                                         <div style="margin-bottom:8px;"><strong>Agent:</strong> ${escapeHtml(allAgents.find(a => a.id === parseInt(agentSelect.value))?.name || 'Unknown')}</div>
                                         <div>${receiverInfo}</div>
                                     </div>

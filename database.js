@@ -333,6 +333,21 @@ function ensureSchemaUpdates() {
                     });
                 }
 
+                db.all(`PRAGMA table_info(clients)`, (clientErr, clientColumns) => {
+                    if (clientErr) {
+                        console.error('Error reading clients schema:', clientErr);
+                        return;
+                    }
+                    const hasDeferral = (clientColumns || []).some((column) => column.name === 'deferral_active');
+                    if (!hasDeferral) {
+                        db.run(`ALTER TABLE clients ADD COLUMN deferral_active INTEGER DEFAULT 0`, (alterErr) => {
+                            if (alterErr && !String(alterErr.message).includes('duplicate column name')) {
+                                console.error('Error adding deferral_active column:', alterErr);
+                            }
+                        });
+                    }
+                });
+
                 // Set existing admin user (by email) to is_admin=1 and is_approved=1
                 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@luckysusu.com').toLowerCase();
                 db.run(`UPDATE users SET is_admin = 1, is_approved = 1 WHERE email = ?`, [ADMIN_EMAIL], (updateErr) => {
@@ -891,6 +906,19 @@ const Client = {
         });
     },
 
+    getAgentId: (id) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+            db.get('SELECT agent_id FROM clients WHERE id = ?', [id], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row?.agent_id || null);
+                }
+            });
+        });
+    },
+
     // Get client by ID (filtered by agent_id for security)
     getById: (id, agentId) => {
         return new Promise((resolve, reject) => {
@@ -1017,7 +1045,37 @@ const Client = {
         });
     },
 
-    // Update client rate (with commission cycle handling)
+    setDeferral: (id, agentId, deferralActive) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+            if (!agentId) {
+                reject(new Error('agent_id is required'));
+                return;
+            }
+
+            db.run(
+                `UPDATE clients SET deferral_active = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ? AND agent_id = ?`,
+                [deferralActive ? 1 : 0, id, agentId],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    if (this.changes === 0) {
+                        reject(new Error('Client not found or access denied'));
+                        return;
+                    }
+                    resolve({
+                        id,
+                        deferral_active: !!deferralActive
+                    });
+                }
+            );
+        });
+    },
+
+    // Update client savings rate
     updateRate: (id, newRate, agentId) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
@@ -1025,113 +1083,46 @@ const Client = {
                 reject(new Error('agent_id is required'));
                 return;
             }
-            
+
             const rateValue = parseFloat(newRate);
             if (isNaN(rateValue) || rateValue < 5) {
                 reject(new Error('Rate must be at least ₵5.00'));
                 return;
             }
 
-            db.serialize(() => {
-                db.run('BEGIN TRANSACTION');
-
-                // Get current client info
-                db.get(
-                    'SELECT rate FROM clients WHERE id = ? AND agent_id = ?',
-                    [id, agentId],
-                    (err, client) => {
-                        if (err) {
-                            db.run('ROLLBACK');
-                            reject(err);
-                            return;
-                        }
-
-                        if (!client) {
-                            db.run('ROLLBACK');
-                            reject(new Error('Client not found or access denied'));
-                            return;
-                        }
-
-                        const oldRate = parseFloat(client.rate || 0);
-
-                        // Update client rate
-                        db.run(
-                            `UPDATE clients SET rate = ?, updated_at = CURRENT_TIMESTAMP 
-                             WHERE id = ? AND agent_id = ?`,
-                            [rateValue, id, agentId],
-                            (updateErr) => {
-                                if (updateErr) {
-                                    db.run('ROLLBACK');
-                                    reject(updateErr);
-                                    return;
-                                }
-
-                                // Get current commission cycle
-                                db.get(
-                                    'SELECT cumulative_withdrawal FROM commission_cycles WHERE client_id = ?',
-                                    [id],
-                                    (cycleErr, cycle) => {
-                                        if (cycleErr) {
-                                            db.run('ROLLBACK');
-                                            reject(cycleErr);
-                                            return;
-                                        }
-
-                                        const currentCumulative = parseFloat(cycle?.cumulative_withdrawal || 0);
-                                        
-                                        // Policy: If new rate is lower and cumulative exceeds new rate, deduct commission
-                                        // Otherwise, continue with existing cumulative
-                                        let newCumulative = currentCumulative;
-                                        let commissionDeducted = false;
-                                        
-                                        if (rateValue < oldRate && currentCumulative >= rateValue) {
-                                            // New rate is lower and cumulative exceeds it, deduct commission
-                                            newCumulative = currentCumulative - rateValue;
-                                            commissionDeducted = true;
-                                        }
-                                        // If new rate is higher, just continue tracking (no change needed)
-
-                                        // Update commission cycle if needed
-                                        if (commissionDeducted) {
-                                            db.run(
-                                                `INSERT INTO commission_cycles (client_id, cumulative_withdrawal, updated_at)
-                                                 VALUES (?, ?, CURRENT_TIMESTAMP)
-                                                 ON CONFLICT(client_id) DO UPDATE SET
-                                                    cumulative_withdrawal = excluded.cumulative_withdrawal,
-                                                    updated_at = CURRENT_TIMESTAMP`,
-                                                [id, newCumulative],
-                                                (cycleUpdateErr) => {
-                                                    if (cycleUpdateErr) {
-                                                        db.run('ROLLBACK');
-                                                        reject(cycleUpdateErr);
-                                                        return;
-                                                    }
-                                                    db.run('COMMIT');
-                                                    resolve({
-                                                        id,
-                                                        old_rate: oldRate,
-                                                        new_rate: rateValue,
-                                                        cumulative_adjusted: commissionDeducted,
-                                                        new_cumulative: newCumulative
-                                                    });
-                                                }
-                                            );
-                                        } else {
-                                            db.run('COMMIT');
-                                            resolve({
-                                                id,
-                                                old_rate: oldRate,
-                                                new_rate: rateValue,
-                                                cumulative_adjusted: false
-                                            });
-                                        }
-                                    }
-                                );
-                            }
-                        );
+            db.get(
+                'SELECT rate FROM clients WHERE id = ? AND agent_id = ?',
+                [id, agentId],
+                (err, client) => {
+                    if (err) {
+                        reject(err);
+                        return;
                     }
-                );
-            });
+
+                    if (!client) {
+                        reject(new Error('Client not found or access denied'));
+                        return;
+                    }
+
+                    const oldRate = parseFloat(client.rate || 0);
+                    db.run(
+                        `UPDATE clients SET rate = ?, updated_at = CURRENT_TIMESTAMP
+                         WHERE id = ? AND agent_id = ?`,
+                        [rateValue, id, agentId],
+                        function(updateErr) {
+                            if (updateErr) {
+                                reject(updateErr);
+                                return;
+                            }
+                            resolve({
+                                id,
+                                old_rate: oldRate,
+                                new_rate: rateValue
+                            });
+                        }
+                    );
+                }
+            );
         });
     },
 
@@ -1329,7 +1320,7 @@ const Transaction = {
         });
     },
 
-    // Reverse a withdrawal transaction and adjust commission cycle
+    // Reverse a withdrawal transaction
     reverseWithdrawal: (transactionId, agentId, reason) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
@@ -1366,9 +1357,8 @@ const Transaction = {
                         const clientId = withdrawal.client_id;
                         const transactionDate = withdrawal.transaction_date;
 
-                        // Get related commission transaction if exists
                         db.get(
-                            `SELECT * FROM transactions 
+                            `SELECT * FROM transactions
                              WHERE related_transaction_id = ? AND transaction_type = 'commission'`,
                             [transactionId],
                             (commErr, commission) => {
@@ -1381,9 +1371,8 @@ const Transaction = {
                                 const commissionAmount = commission ? Math.abs(parseFloat(commission.amount)) : 0;
                                 const commissionId = commission?.id;
 
-                                // Get current client balance
                                 db.get(
-                                    'SELECT current_balance, rate FROM clients WHERE id = ? AND agent_id = ?',
+                                    'SELECT current_balance FROM clients WHERE id = ? AND agent_id = ?',
                                     [clientId, agentId],
                                     (clientErr, client) => {
                                         if (clientErr) {
@@ -1399,167 +1388,70 @@ const Transaction = {
                                         }
 
                                         const currentBalance = parseFloat(client.current_balance || 0);
-                                        const clientRate = parseFloat(client.rate || 0);
-
-                                        // Restore balance (add back withdrawal and commission)
                                         const restoredBalance = currentBalance + withdrawalAmount + commissionAmount;
+                                        const reversalNote = `Reversal of withdrawal #${transactionId}. ${reason || 'Transaction reversed'}`;
 
-                                        // Get current commission cycle
-                                        db.get(
-                                            'SELECT cumulative_withdrawal FROM commission_cycles WHERE client_id = ?',
-                                            [clientId],
-                                            (cycleErr, cycle) => {
-                                                if (cycleErr) {
+                                        db.run(
+                                            `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
+                                             VALUES (?, ?, ?, 'deposit', ?, ?, ?)`,
+                                            [clientId, agentId, withdrawalAmount, transactionDate, reversalNote, transactionId],
+                                            function(revErr) {
+                                                if (revErr) {
                                                     db.run('ROLLBACK');
-                                                    reject(cycleErr);
+                                                    reject(revErr);
                                                     return;
                                                 }
 
-                                                const currentCumulative = parseFloat(cycle?.cumulative_withdrawal || 0);
-                                                
-                                                // Calculate threshold for this client
-                                                const COMMISSION_THRESHOLD = 31 * clientRate;
-                                                
-                                                // Adjust cumulative: reverse the page-by-page processing
-                                                // With new logic: commission is only deducted when full pages are completed
-                                                let newCumulative = currentCumulative;
-                                                
-                                                if (commissionId && commissionAmount > 0 && clientRate > 0) {
-                                                    // Commission was deducted, meaning full pages were completed
-                                                    // Number of full pages completed = commissionAmount / clientRate
-                                                    const fullPagesCompleted = commissionAmount / clientRate;
-                                                    
-                                                    // Amount that completed those full pages = fullPagesCompleted × COMMISSION_THRESHOLD
-                                                    const amountThatCompletedFullPages = fullPagesCompleted * COMMISSION_THRESHOLD;
-                                                    
-                                                    // The withdrawal amount = amount that completed full pages + amount added to new cumulative
-                                                    // So: amount added to new cumulative = withdrawalAmount - amountThatCompletedFullPages
-                                                    const amountAddedToNewCumulative = withdrawalAmount - amountThatCompletedFullPages;
-                                                    
-                                                    // To reverse: 
-                                                    // 1. Current cumulative is what's left in the new incomplete page
-                                                    // 2. Subtract the amount that was added to this new cumulative
-                                                    // 3. This gives us the cumulative after completing full pages (which should be 0)
-                                                    // 4. Then we need to restore what was in the completed pages before
-                                                    // 5. Since we don't store that, we estimate: subtract withdrawal, add back full pages
-                                                    
-                                                    // Start with current cumulative and work backwards
-                                                    let tempCumulative = currentCumulative;
-                                                    
-                                                    // Subtract the amount that was added to the new cumulative
-                                                    tempCumulative -= amountAddedToNewCumulative;
-                                                    
-                                                    // Now we're at the point after completing full pages (should be 0 or close)
-                                                    // To get back to before the withdrawal, we need to:
-                                                    // - Add back what was in the completed pages (we don't know exactly)
-                                                    // - Subtract the withdrawal amount
-                                                    
-                                                    // Heuristic: assume the completed pages had some amount in them
-                                                    // The amount in completed pages = amountThatCompletedFullPages - (withdrawalAmount - amountAddedToNewCumulative)
-                                                    // But this is just: amountThatCompletedFullPages - amountThatCompletedFullPages = 0
-                                                    // That means we're assuming pages started empty, which may not be true
-                                                    
-                                                    // Better heuristic: the cumulative before = currentCumulative - withdrawalAmount
-                                                    // But if that's negative, we need to add back full pages
-                                                    tempCumulative = currentCumulative - withdrawalAmount;
-                                                    
-                                                    // If negative, add back full pages (uncomplete them)
-                                                    while (tempCumulative < 0 && fullPagesCompleted > 0) {
-                                                        tempCumulative += COMMISSION_THRESHOLD;
-                                                    }
-                                                    
-                                                    newCumulative = Math.max(0, tempCumulative);
+                                                const reversalId = this.lastID;
+                                                const finalize = (commissionReversalId = null) => {
+                                                    db.run(
+                                                        `UPDATE clients SET current_balance = ?, updated_at = CURRENT_TIMESTAMP
+                                                         WHERE id = ? AND agent_id = ?`,
+                                                        [restoredBalance, clientId, agentId],
+                                                        (updateErr) => {
+                                                            if (updateErr) {
+                                                                db.run('ROLLBACK');
+                                                                reject(updateErr);
+                                                                return;
+                                                            }
+
+                                                            db.run('COMMIT');
+                                                            resolve({
+                                                                reversal: {
+                                                                    id: reversalId,
+                                                                    client_id: clientId,
+                                                                    amount: withdrawalAmount,
+                                                                    transaction_type: 'deposit',
+                                                                    notes: reversalNote
+                                                                },
+                                                                commission_reversal: commissionReversalId ? {
+                                                                    id: commissionReversalId,
+                                                                    amount: commissionAmount
+                                                                } : null,
+                                                                updated_balance: restoredBalance
+                                                            });
+                                                        }
+                                                    );
+                                                };
+
+                                                if (commissionId && commissionAmount > 0) {
+                                                    const commissionReversalNote = `Reversal of legacy commission #${commissionId} (related to withdrawal #${transactionId})`;
+                                                    db.run(
+                                                        `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
+                                                         VALUES (?, ?, ?, 'deposit', ?, ?, ?)`,
+                                                        [clientId, agentId, commissionAmount, transactionDate, commissionReversalNote, commissionId],
+                                                        function(commRevErr) {
+                                                            if (commRevErr) {
+                                                                db.run('ROLLBACK');
+                                                                reject(commRevErr);
+                                                                return;
+                                                            }
+                                                            finalize(this.lastID);
+                                                        }
+                                                    );
                                                 } else {
-                                                    // No commission was deducted, just subtract withdrawal amount from cumulative
-                                                    newCumulative = Math.max(0, currentCumulative - withdrawalAmount);
+                                                    finalize();
                                                 }
-
-                                                // Create reversal transaction
-                                                const reversalNote = `Reversal of withdrawal #${transactionId}. ${reason || 'Transaction reversed'}`;
-                                                db.run(
-                                                    `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
-                                                     VALUES (?, ?, ?, 'deposit', ?, ?, ?)`,
-                                                    [clientId, agentId, withdrawalAmount, transactionDate, reversalNote, transactionId],
-                                                    function(revErr) {
-                                                        if (revErr) {
-                                                            db.run('ROLLBACK');
-                                                            reject(revErr);
-                                                            return;
-                                                        }
-
-                                                        const reversalId = this.lastID;
-
-                                                        // If commission was deducted, create reversal for it too
-                                                        const finalize = (commissionReversalId = null) => {
-                                                            // Update client balance
-                                                            db.run(
-                                                                `UPDATE clients SET current_balance = ?, updated_at = CURRENT_TIMESTAMP 
-                                                                 WHERE id = ? AND agent_id = ?`,
-                                                                [restoredBalance, clientId, agentId],
-                                                                (updateErr) => {
-                                                                    if (updateErr) {
-                                                                        db.run('ROLLBACK');
-                                                                        reject(updateErr);
-                                                                        return;
-                                                                    }
-
-                                                                    // Update commission cycle
-                                                                    db.run(
-                                                                        `INSERT INTO commission_cycles (client_id, cumulative_withdrawal, updated_at)
-                                                                         VALUES (?, ?, CURRENT_TIMESTAMP)
-                                                                         ON CONFLICT(client_id) DO UPDATE SET
-                                                                            cumulative_withdrawal = excluded.cumulative_withdrawal,
-                                                                            updated_at = CURRENT_TIMESTAMP`,
-                                                                        [clientId, newCumulative],
-                                                                        (cycleUpdateErr) => {
-                                                                            if (cycleUpdateErr) {
-                                                                                db.run('ROLLBACK');
-                                                                                reject(cycleUpdateErr);
-                                                                                return;
-                                                                            }
-
-                                                                            db.run('COMMIT');
-                                                                            resolve({
-                                                                                reversal: {
-                                                                                    id: reversalId,
-                                                                                    client_id: clientId,
-                                                                                    amount: withdrawalAmount,
-                                                                                    transaction_type: 'deposit',
-                                                                                    notes: reversalNote
-                                                                                },
-                                                                                commission_reversal: commissionReversalId ? {
-                                                                                    id: commissionReversalId,
-                                                                                    amount: commissionAmount
-                                                                                } : null,
-                                                                                updated_balance: restoredBalance,
-                                                                                updated_cumulative: newCumulative
-                                                                            });
-                                                                        }
-                                                                    );
-                                                                }
-                                                            );
-                                                        };
-
-                                                        if (commissionId && commissionAmount > 0) {
-                                                            const commissionReversalNote = `Reversal of commission #${commissionId} (related to withdrawal #${transactionId})`;
-                                                            db.run(
-                                                                `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
-                                                                 VALUES (?, ?, ?, 'deposit', ?, ?, ?)`,
-                                                                [clientId, agentId, commissionAmount, transactionDate, commissionReversalNote, commissionId],
-                                                                function(commRevErr) {
-                                                                    if (commRevErr) {
-                                                                        db.run('ROLLBACK');
-                                                                        reject(commRevErr);
-                                                                        return;
-                                                                    }
-                                                                    finalize(this.lastID);
-                                                                }
-                                                            );
-                                                        } else {
-                                                            finalize();
-                                                        }
-                                                    }
-                                                );
                                             }
                                         );
                                     }
@@ -1572,42 +1464,79 @@ const Transaction = {
         });
     },
 
-    // Get commission history for a client
-    getCommissionHistory: (clientId, agentId) => {
+    getMonetaryTotalsForClient: (clientId) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
-            if (!agentId) {
-                reject(new Error('agent_id is required'));
-                return;
-            }
-            
-            db.all(
-                `SELECT 
-                    t.id,
-                    t.amount,
-                    t.transaction_date,
-                    t.created_at,
-                    t.notes,
-                    t.related_transaction_id,
-                    w.amount as withdrawal_amount,
-                    w.transaction_date as withdrawal_date
-                 FROM transactions t
-                 LEFT JOIN transactions w ON w.id = t.related_transaction_id
-                 WHERE t.client_id = ? AND t.agent_id = ? AND t.transaction_type = 'commission'
-                 ORDER BY t.created_at DESC`,
-                [clientId, agentId],
-                (err, rows) => {
+            db.get(
+                `SELECT
+                    COALESCE(SUM(CASE WHEN transaction_type = 'deposit' THEN amount ELSE 0 END), 0) AS deposits,
+                    COALESCE(SUM(CASE WHEN transaction_type = 'withdrawal' THEN ABS(amount) ELSE 0 END), 0) AS withdrawals,
+                    COALESCE(SUM(CASE WHEN transaction_type = 'commission' THEN ABS(amount) ELSE 0 END), 0) AS commissions
+                 FROM transactions
+                 WHERE client_id = ?`,
+                [clientId],
+                (err, row) => {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve(rows || []);
+                        resolve({
+                            deposits: parseFloat(row?.deposits || 0),
+                            withdrawals: parseFloat(row?.withdrawals || 0),
+                            commissions: parseFloat(row?.commissions || 0)
+                        });
                     }
                 }
             );
         });
     },
 
-    createWithdrawalWithCommission: (data) => {
+    getBoxAccountForClient: async (clientId, agentId) => {
+        const client = await Client.getById(clientId, agentId);
+        if (!client) {
+            throw new Error('Client not found or access denied');
+        }
+
+        const { computeBoxLedger, roundMoney, BOXES_PER_PAGE } = require('./commission');
+        const totals = await Transaction.getMonetaryTotalsForClient(clientId);
+        const ledger = computeBoxLedger(totals, client.rate);
+        const maxPayoutSummary = ledger.active_boxes > 0
+            ? require('./commission').buildWithdrawalSummary(
+                ledger.active_boxes,
+                client.rate,
+                client.deferral_active === 1 || client.deferral_active === true,
+                ledger.active_boxes
+            )
+            : null;
+
+        return {
+            client_id: clientId,
+            box_rate: parseFloat(client.rate),
+            deferral_active: client.deferral_active === 1 || client.deferral_active === true,
+            current_balance: roundMoney(client.current_balance),
+            monetary_totals: totals,
+            ledger,
+            boxes_per_page: BOXES_PER_PAGE,
+            max_payout: maxPayoutSummary ? maxPayoutSummary.payout : 0,
+            max_payout_summary: maxPayoutSummary
+        };
+    },
+
+    previewWithdrawal: async (clientId, agentId, requestedPayout) => {
+        const account = await Transaction.getBoxAccountForClient(clientId, agentId);
+        const { solveWithdrawalFromPayout } = require('./commission');
+        const summary = solveWithdrawalFromPayout(
+            account.ledger.active_boxes,
+            account.box_rate,
+            account.deferral_active,
+            requestedPayout
+        );
+        return {
+            account,
+            withdrawal: summary
+        };
+    },
+
+    createWithdrawal: (data) => {
         return new Promise((resolve, reject) => {
             const db = getDatabase();
             const {
@@ -1617,215 +1546,109 @@ const Transaction = {
                 transaction_date,
                 notes
             } = data;
+            const requestedPayout = parseFloat(withdrawal_amount);
 
-            if (!agent_id) {
-                reject(new Error('agent_id is required'));
+            if (!client_id || !agent_id) {
+                reject(new Error('client_id and agent_id are required'));
+                return;
+            }
+            if (isNaN(requestedPayout) || requestedPayout <= 0) {
+                reject(new Error('Valid withdrawal_amount is required'));
                 return;
             }
 
-            const withdrawalAmount = parseFloat(withdrawal_amount);
-
-            if (!client_id || isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-                reject(new Error('Valid client_id and withdrawal_amount are required'));
-                return;
-            }
+            const { solveWithdrawalFromPayout, roundMoney } = require('./commission');
 
             db.serialize(() => {
                 db.run('BEGIN TRANSACTION');
 
-                // Get client info - get client first to retrieve their actual agent_id
                 db.get(
-                    'SELECT current_balance, rate, agent_id FROM clients WHERE id = ?',
+                    'SELECT id, current_balance, rate, agent_id, deferral_active FROM clients WHERE id = ?',
                     [client_id],
-                    (err, client) => {
-                        if (err) {
+                    (clientErr, client) => {
+                        if (clientErr) {
                             db.run('ROLLBACK');
-                            reject(err);
+                            reject(clientErr);
                             return;
                         }
-
                         if (!client) {
                             db.run('ROLLBACK');
                             reject(new Error('Client not found'));
                             return;
                         }
-
-                        // Verify agent_id matches (authorization check)
-                        // Use the client's actual agent_id for the transaction
-                        const actualAgentId = client.agent_id;
-                        if (agent_id && parseInt(actualAgentId) !== parseInt(agent_id)) {
+                        if (parseInt(client.agent_id) !== parseInt(agent_id)) {
                             db.run('ROLLBACK');
                             reject(new Error('Client does not belong to the specified agent'));
                             return;
                         }
 
+                        const actualAgentId = client.agent_id;
+                        const boxRate = parseFloat(client.rate);
+                        const deferralActive = client.deferral_active === 1 || client.deferral_active === true;
                         const startingBalance = parseFloat(client.current_balance) || 0;
-                        const clientRate = parseFloat(client.rate) || 0;
 
-                        // Validate client rate is positive
-                        if (clientRate <= 0) {
-                            db.run('ROLLBACK');
-                            reject(new Error('Client rate must be greater than 0'));
-                            return;
-                        }
-
-                        // Check if client has sufficient balance for withdrawal
-                        if (startingBalance < withdrawalAmount) {
-                            db.run('ROLLBACK');
-                            reject(new Error('Insufficient balance for withdrawal'));
-                            return;
-                        }
-
-                        // Get or create commission cycle record
                         db.get(
-                            'SELECT cumulative_withdrawal FROM commission_cycles WHERE client_id = ?',
+                            `SELECT
+                                COALESCE(SUM(CASE WHEN transaction_type = 'deposit' THEN amount ELSE 0 END), 0) AS deposits,
+                                COALESCE(SUM(CASE WHEN transaction_type = 'withdrawal' THEN ABS(amount) ELSE 0 END), 0) AS withdrawals,
+                                COALESCE(SUM(CASE WHEN transaction_type = 'commission' THEN ABS(amount) ELSE 0 END), 0) AS commissions
+                             FROM transactions
+                             WHERE client_id = ?`,
                             [client_id],
-                            (cycleErr, cycle) => {
-                                if (cycleErr) {
+                            (totalsErr, totalsRow) => {
+                                if (totalsErr) {
                                     db.run('ROLLBACK');
-                                    reject(cycleErr);
+                                    reject(totalsErr);
                                     return;
                                 }
 
-                                // Get current cumulative withdrawal amount (amount already in current incomplete page)
-                                let currentCumulative = parseFloat(cycle?.cumulative_withdrawal || 0);
-                                
-                                // Commission threshold: 31 boxes = 31 × client rate (one full page)
-                                const COMMISSION_THRESHOLD = 31 * clientRate;
-                                
-                                // Edge case: If cumulative is already at or exceeds threshold, it shouldn't happen
-                                // but if it does (due to data inconsistency), reset it to start a new page
-                                // This ensures the system can recover from data inconsistencies
-                                if (currentCumulative >= COMMISSION_THRESHOLD) {
-                                    // Calculate how many full pages are already completed
-                                    const fullPagesAlreadyCompleted = Math.floor(currentCumulative / COMMISSION_THRESHOLD);
-                                    // Reset to the remainder (amount in current incomplete page)
-                                    currentCumulative = currentCumulative % COMMISSION_THRESHOLD;
-                                    // Log this for debugging (could be added to error log)
-                                    console.warn(`Warning: Client ${client_id} had cumulative (${cycle?.cumulative_withdrawal}) >= threshold (${COMMISSION_THRESHOLD}). Reset to ${currentCumulative}.`);
-                                }
-                                
-                                // Check if client is withdrawing all or most of their balance
-                                // Commission should be deducted if balance after withdrawal is <= client rate
-                                // This ensures commission is deducted when client withdraws all or most of their money
-                                const balanceAfterWithdrawal = startingBalance - withdrawalAmount;
-                                const isWithdrawingAllOrMost = balanceAfterWithdrawal <= clientRate;
-                                
-                                // Process withdrawal page by page
-                                // Commission is ONLY deducted when a FULL page (31 boxes) is completed
-                                let remainingWithdrawal = withdrawalAmount;
-                                let currentPageAmount = currentCumulative; // Amount already accumulated in current incomplete page
-                                let totalCommission = 0;
-                                let totalGivenToClient = 0;
-                                
-                                // Process each page until withdrawal is fully processed
-                                while (remainingWithdrawal > 0 && clientRate > 0) {
-                                    // How much is needed to complete the current page?
-                                    const neededForFullPage = COMMISSION_THRESHOLD - currentPageAmount;
-                                    
-                                    if (remainingWithdrawal >= neededForFullPage) {
-                                        // This withdrawal completes the current page (full page)
-                                        // Deduct commission for this completed full page
-                                        totalCommission += clientRate;
-                                        
-                                        // Client gets: (amount already in page) + (needed for full page - commission)
-                                        // From this page, client gets: currentPageAmount + (neededForFullPage - clientRate)
-                                        const clientGetsFromThisPage = currentPageAmount + (neededForFullPage - clientRate);
-                                        totalGivenToClient += clientGetsFromThisPage;
-                                        
-                                        // Update remaining withdrawal
-                                        remainingWithdrawal -= neededForFullPage;
-                                        
-                                        // Move to next page (starts empty)
-                                        currentPageAmount = 0;
-                                    } else {
-                                        // This withdrawal doesn't complete the current page
-                                        // Check if this is a full withdrawal - if so, deduct commission even for incomplete page
-                                        if (isWithdrawingAllOrMost && remainingWithdrawal > 0) {
-                                            // Full withdrawal: commission is deducted from remaining balance, not from withdrawal amount
-                                            // Client gets the full withdrawal amount, commission comes from what's left in account
-                                            totalCommission += clientRate;
-                                            
-                                            // Client gets the FULL withdrawal amount (not reduced by commission)
-                                            // Commission will be deducted from the remaining balance in the account
-                                            const clientGetsFromThisPage = currentPageAmount + remainingWithdrawal;
-                                            totalGivenToClient += clientGetsFromThisPage;
-                                            
-                                            // No remaining withdrawal or cumulative (full withdrawal)
-                                            remainingWithdrawal = 0;
-                                            currentPageAmount = 0;
-                                        } else {
-                                            // Normal withdrawal: no commission for incomplete page
-                                            currentPageAmount += remainingWithdrawal;
-                                            totalGivenToClient += remainingWithdrawal;
-                                            remainingWithdrawal = 0;
-                                        }
-                                    }
-                                }
-                                
-                                // Final values
-                                const actualWithdrawalAmount = totalGivenToClient;
-                                const commissionToDeduct = totalCommission;
-                                const remainingCumulative = currentPageAmount; // Amount left in current incomplete page
-                                const shouldDeductCommission = commissionToDeduct > 0;
-                                
-                                // For full withdrawals, cumulative should always be reset to 0
-                                const finalRemainingCumulative = isWithdrawingAllOrMost ? 0 : remainingCumulative;
-
-                                // Calculate total deduction
-                                const totalDeduction = actualWithdrawalAmount + commissionToDeduct;
-
-                                // Log commission calculation details for debugging/audit
+                                let summary;
                                 try {
-                                    const logger = require('./logger');
-                                    logger.info('Commission calculation', {
-                                        client_id,
-                                        requested_withdrawal: withdrawalAmount,
-                                        actual_withdrawal: actualWithdrawalAmount,
-                                        commission: commissionToDeduct,
-                                        full_pages_completed: commissionToDeduct / clientRate,
-                                        cumulative_before: currentCumulative,
-                                        cumulative_after: finalRemainingCumulative,
-                                        is_full_withdrawal: isWithdrawingAllOrMost,
-                                        threshold: COMMISSION_THRESHOLD
-                                    });
-                                } catch (logErr) {
-                                    // Logger might not be available, use console as fallback
-                                    console.log(`Commission calculation - Client: ${client_id}, Requested: ₵${withdrawalAmount}, Actual: ₵${actualWithdrawalAmount}, Commission: ₵${commissionToDeduct}, Pages: ${commissionToDeduct / clientRate}`);
-                                }
-
-                                // Check if client has sufficient balance for withdrawal + commission (if needed)
-                                if (startingBalance < totalDeduction) {
+                                    const { computeBoxLedger } = require('./commission');
+                                    const ledger = computeBoxLedger({
+                                        deposits: parseFloat(totalsRow?.deposits || 0),
+                                        withdrawals: parseFloat(totalsRow?.withdrawals || 0),
+                                        commissions: parseFloat(totalsRow?.commissions || 0)
+                                    }, boxRate);
+                                    summary = solveWithdrawalFromPayout(
+                                        ledger.active_boxes,
+                                        boxRate,
+                                        deferralActive,
+                                        requestedPayout
+                                    );
+                                } catch (calcErr) {
                                     db.run('ROLLBACK');
-                                    const shortfall = totalDeduction - startingBalance;
-                                    const errorMessage = shouldDeductCommission
-                                        ? `Insufficient balance. Withdrawal of ₵${actualWithdrawalAmount.toFixed(2)} plus commission of ₵${commissionToDeduct.toFixed(2)} requires ₵${totalDeduction.toFixed(2)} total, but client balance is only ₵${startingBalance.toFixed(2)}. Shortfall: ₵${shortfall.toFixed(2)}.`
-                                        : `Insufficient balance. Withdrawal of ₵${actualWithdrawalAmount.toFixed(2)} exceeds available balance of ₵${startingBalance.toFixed(2)}.`;
-                                    reject(new Error(errorMessage));
+                                    reject(calcErr);
                                     return;
                                 }
 
-                                // Insert withdrawal transaction (use actual withdrawal amount)
+                                if (startingBalance + 0.001 < summary.total_deduction) {
+                                    db.run('ROLLBACK');
+                                    reject(new Error(
+                                        `Insufficient balance. This withdrawal requires ₵${summary.total_deduction.toFixed(2)} ` +
+                                        `(payout ₵${summary.payout.toFixed(2)} + commission ₵${summary.commission_amount.toFixed(2)}), ` +
+                                        `but available balance is ₵${startingBalance.toFixed(2)}.`
+                                    ));
+                                    return;
+                                }
+
                                 db.run(
                                     `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
                                      VALUES (?, ?, ?, 'withdrawal', ?, ?, NULL)`,
-                                    [client_id, actualAgentId, -actualWithdrawalAmount, transaction_date, notes || null],
-                                    function(insertErr) {
-                                        if (insertErr) {
+                                    [client_id, actualAgentId, -summary.payout, transaction_date, notes || null],
+                                    function(withdrawErr) {
+                                        if (withdrawErr) {
                                             db.run('ROLLBACK');
-                                            reject(insertErr);
+                                            reject(withdrawErr);
                                             return;
                                         }
 
                                         const withdrawalTransactionId = this.lastID;
 
-                                        // Function to finalize the transaction
                                         const finalize = (commissionTransactionId = null) => {
-                                            const finalBalance = startingBalance - totalDeduction;
-                                            
-                                            // Update client balance
+                                            const finalBalance = roundMoney(startingBalance - summary.total_deduction);
                                             db.run(
-                                                `UPDATE clients SET current_balance = ?, updated_at = CURRENT_TIMESTAMP 
+                                                `UPDATE clients SET current_balance = ?, updated_at = CURRENT_TIMESTAMP
                                                  WHERE id = ? AND agent_id = ?`,
                                                 [finalBalance, client_id, actualAgentId],
                                                 (updateErr) => {
@@ -1835,90 +1658,59 @@ const Transaction = {
                                                         return;
                                                     }
 
-                                                    // Update or insert commission cycle
-                                                    db.run(
-                                                        `INSERT INTO commission_cycles (client_id, cumulative_withdrawal, updated_at)
-                                                         VALUES (?, ?, CURRENT_TIMESTAMP)
-                                                         ON CONFLICT(client_id) DO UPDATE SET
-                                                            cumulative_withdrawal = excluded.cumulative_withdrawal,
-                                                            updated_at = CURRENT_TIMESTAMP`,
-                                                        [client_id, finalRemainingCumulative],
-                                                        (cycleUpdateErr) => {
-                                                            if (cycleUpdateErr) {
-                                                                db.run('ROLLBACK');
-                                                                reject(cycleUpdateErr);
-                                                                return;
-                                                            }
-
-                                                            db.run('COMMIT');
-                                                            resolve({
-                                                                withdrawal: {
-                                                                    id: withdrawalTransactionId,
-                                                                    client_id,
-                                                                    agent_id: actualAgentId,
-                                                                    amount: -actualWithdrawalAmount,
-                                                                    transaction_type: 'withdrawal',
-                                                                    transaction_date,
-                                                                    notes: notes || null
-                                                                },
-                                                                commission: commissionTransactionId
-                                                                    ? {
-                                                                        id: commissionTransactionId,
-                                                                        client_id,
-                                                                        agent_id: actualAgentId,
-                                                                        amount: -commissionToDeduct,
-                                                                        transaction_type: 'commission',
-                                                                        transaction_date,
-                                                                        notes: `Auto commission (31st box) - cumulative withdrawals reached threshold`
-                                                                    }
-                                                                    : null,
-                                                                totals: {
-                                                                    withdrawal_amount: actualWithdrawalAmount,
-                                                                    requested_amount: withdrawalAmount,
-                                                                    commission_amount: commissionToDeduct,
-                                                                    total_deduction: totalDeduction,
-                                                                    remaining_balance: finalBalance,
-                                                                    client_rate: clientRate,
-                                                                    cumulative_before: currentCumulative,
-                                                                    cumulative_after: finalRemainingCumulative,
-                                                                    commission_deducted: shouldDeductCommission,
-                                                                    full_withdrawal: isWithdrawingAllOrMost
-                                                                }
-                                                            });
+                                                    db.run('COMMIT');
+                                                    resolve({
+                                                        withdrawal: {
+                                                            id: withdrawalTransactionId,
+                                                            client_id,
+                                                            agent_id: actualAgentId,
+                                                            amount: -summary.payout,
+                                                            transaction_type: 'withdrawal',
+                                                            transaction_date,
+                                                            notes: notes || null
+                                                        },
+                                                        commission: commissionTransactionId ? {
+                                                            id: commissionTransactionId,
+                                                            client_id,
+                                                            agent_id: actualAgentId,
+                                                            amount: -summary.commission_amount,
+                                                            transaction_type: 'commission',
+                                                            transaction_date
+                                                        } : null,
+                                                        box_account: summary,
+                                                        totals: {
+                                                            withdrawal_amount: summary.payout,
+                                                            requested_amount: requestedPayout,
+                                                            commission_amount: summary.commission_amount,
+                                                            total_deduction: summary.total_deduction,
+                                                            remaining_balance: finalBalance,
+                                                            commission_boxes: summary.commission_boxes,
+                                                            boxes_withdrawn: summary.boxes_to_withdraw,
+                                                            net_boxes_paid: summary.net_boxes_paid
                                                         }
-                                                    );
+                                                    });
                                                 }
                                             );
                                         };
 
-                                        // If commission should be deducted, create commission transaction
-                                        if (shouldDeductCommission && commissionToDeduct > 0) {
-                                            let commissionNote;
-                                            if (isWithdrawingAllOrMost) {
-                                                commissionNote = `Auto commission (31st box) - deducted due to full/complete withdrawal (client withdrawing all/most of balance)`;
-                                            } else {
-                                                // Calculate how many full pages were completed
-                                                // Each full page gives 1 × clientRate commission
-                                                const fullPagesCompleted = commissionToDeduct / clientRate;
-                                                const pagesText = fullPagesCompleted === 1 ? 'page' : 'pages';
-                                                commissionNote = `Auto commission (31st box) - ${fullPagesCompleted} full ${pagesText} completed (threshold: ₵${COMMISSION_THRESHOLD.toFixed(2)} = 31 boxes per page)`;
-                                            }
+                                        if (summary.commission_amount > 0) {
+                                            const commissionNote = summary.deferral_active && summary.withdrawal_partial_boxes > 0
+                                                ? `Company commission (${summary.commission_boxes} box) — deferral active on incomplete page`
+                                                : `Company commission (${summary.commission_boxes} box${summary.commission_boxes === 1 ? '' : 'es'}) — 1 box per completed page${summary.withdrawal_partial_boxes > 0 && !summary.deferral_active ? ' plus incomplete page' : ''}`;
                                             db.run(
                                                 `INSERT INTO transactions (client_id, agent_id, amount, transaction_type, transaction_date, notes, related_transaction_id)
                                                  VALUES (?, ?, ?, 'commission', ?, ?, ?)`,
-                                                [client_id, actualAgentId, -commissionToDeduct, transaction_date, commissionNote, withdrawalTransactionId],
+                                                [client_id, actualAgentId, -summary.commission_amount, transaction_date, commissionNote, withdrawalTransactionId],
                                                 function(commissionErr) {
                                                     if (commissionErr) {
                                                         db.run('ROLLBACK');
                                                         reject(commissionErr);
                                                         return;
                                                     }
-
                                                     finalize(this.lastID);
                                                 }
                                             );
                                         } else {
-                                            // No commission deducted, just update cycle
                                             finalize();
                                         }
                                     }
@@ -2762,121 +2554,6 @@ const Transaction = {
         });
     },
 
-    getDailyCommissions: (date) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-
-            db.all(
-                `SELECT 
-                    t.id as commission_id,
-                    ABS(t.amount) as commission_amount,
-                    t.transaction_date,
-                    t.created_at,
-                    t.notes as commission_notes,
-                    w.id as withdrawal_id,
-                    ABS(w.amount) as withdrawal_amount,
-                    w.created_at as withdrawal_created_at,
-                    c.id as client_id,
-                    c.name as client_name,
-                    c.phone as client_phone,
-                    c.rate as client_rate,
-                    u.id as agent_id,
-                    u.name as agent_name
-                 FROM transactions t
-                 JOIN clients c ON t.client_id = c.id
-                 JOIN users u ON t.agent_id = u.id
-                 LEFT JOIN transactions w ON w.id = t.related_transaction_id
-                 WHERE t.transaction_date = ? AND t.transaction_type = 'commission'
-                 ORDER BY t.created_at DESC`,
-                [date],
-                (err, rows) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    const totalAmount = (rows || []).reduce((sum, row) => sum + (parseFloat(row.commission_amount) || 0), 0);
-                    resolve({
-                        commissions: rows || [],
-                        total_amount: totalAmount,
-                        date
-                    });
-                }
-            );
-        });
-    },
-
-    getWeeklyCommissions: (startDate, endDate) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-
-            db.all(
-                `SELECT 
-                    u.id as agent_id,
-                    u.name as agent_name,
-                    SUM(ABS(t.amount)) as total_commission,
-                    COUNT(DISTINCT t.client_id) as unique_clients,
-                    COUNT(t.id) as commission_count
-                 FROM transactions t
-                 JOIN users u ON t.agent_id = u.id
-                 WHERE t.transaction_date >= ? AND t.transaction_date <= ?
-                   AND t.transaction_type = 'commission'
-                 GROUP BY u.id, u.name
-                 ORDER BY total_commission DESC`,
-                [startDate, endDate],
-                (err, rows) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    const overallTotal = (rows || []).reduce((sum, row) => sum + (parseFloat(row.total_commission) || 0), 0);
-                    resolve({
-                        agents: rows || [],
-                        overall_total: overallTotal,
-                        start_date: startDate,
-                        end_date: endDate
-                    });
-                }
-            );
-        });
-    },
-
-    getMonthlyCommissions: (startDate, endDate) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-
-            db.all(
-                `SELECT 
-                    u.id as agent_id,
-                    u.name as agent_name,
-                    SUM(ABS(t.amount)) as total_commission,
-                    COUNT(DISTINCT t.client_id) as unique_clients,
-                    COUNT(t.id) as commission_count
-                 FROM transactions t
-                 JOIN users u ON t.agent_id = u.id
-                 WHERE t.transaction_date >= ? AND t.transaction_date <= ?
-                   AND t.transaction_type = 'commission'
-                 GROUP BY u.id, u.name
-                 ORDER BY total_commission DESC`,
-                [startDate, endDate],
-                (err, rows) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    const overallTotal = (rows || []).reduce((sum, row) => sum + (parseFloat(row.total_commission) || 0), 0);
-                    resolve({
-                        agents: rows || [],
-                        overall_total: overallTotal,
-                        start_date: startDate,
-                        end_date: endDate
-                    });
-                }
-            );
-        });
-    }
 };
 
 const AgentDailyStatus = {
@@ -3345,179 +3022,16 @@ const User = {
                                         return;
                                     }
                                     
-                                    // Get total commission today
-                                    db.get(
-                                        `SELECT COALESCE(SUM(ABS(amount)), 0) as total_commission 
-                                         FROM transactions 
-                                         WHERE transaction_date = ? AND transaction_type = 'commission'`,
-                                        [today],
-                                        (err4, commissionRow) => {
-                                            if (err4) {
-                                                reject(err4);
-                                                return;
-                                            }
-                                            
-                                            resolve({
-                                                new_clients_today: newClientsRow?.new_clients_today || 0,
-                                                total_deposits: depositsRow?.total_deposits || 0,
-                                                total_withdrawals: withdrawalsRow?.total_withdrawals || 0,
-                                                total_commission: commissionRow?.total_commission || 0,
-                                                date: today
-                                            });
-                                        }
-                                    );
+                                    resolve({
+                                        new_clients_today: newClientsRow?.new_clients_today || 0,
+                                        total_deposits: depositsRow?.total_deposits || 0,
+                                        total_withdrawals: withdrawalsRow?.total_withdrawals || 0,
+                                        date: today
+                                    });
                                 }
                             );
                         }
                     );
-                }
-            );
-        });
-    }
-};
-
-// Commission Cycle operations
-const CommissionCycle = {
-    // Get commission cycle for a client
-    getByClientId: (clientId) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-            db.get(
-                'SELECT * FROM commission_cycles WHERE client_id = ?',
-                [clientId],
-                (err, row) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(row || { client_id: clientId, cumulative_withdrawal: 0, updated_at: null });
-                    }
-                }
-            );
-        });
-    },
-
-    // Get commission cycle with client info
-    getByClientIdWithClientInfo: (clientId, agentId) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-            db.get(
-                `SELECT 
-                    cc.*,
-                    c.rate as client_rate,
-                    c.current_balance,
-                    c.name as client_name
-                 FROM commission_cycles cc
-                 RIGHT JOIN clients c ON cc.client_id = c.id
-                 WHERE c.id = ? AND c.agent_id = ?`,
-                [clientId, agentId],
-                (err, row) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        const cumulative = parseFloat(row?.cumulative_withdrawal || 0);
-                        const rate = parseFloat(row?.client_rate || 0);
-                        const threshold = 31 * rate; // 31 boxes = one full page
-                        resolve({
-                            client_id: clientId,
-                            cumulative_withdrawal: cumulative,
-                            client_rate: rate,
-                            commission_threshold: threshold,
-                            remaining_to_threshold: Math.max(0, threshold - cumulative),
-                            threshold_reached: cumulative >= threshold,
-                            updated_at: row?.updated_at || null,
-                            client_name: row?.client_name,
-                            current_balance: parseFloat(row?.current_balance || 0)
-                        });
-                    }
-                }
-            );
-        });
-    },
-
-    // Reset commission cycle for a client
-    reset: (clientId) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-            db.run(
-                `UPDATE commission_cycles SET cumulative_withdrawal = 0, updated_at = CURRENT_TIMESTAMP WHERE client_id = ?`,
-                [clientId],
-                function(err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        if (this.changes === 0) {
-                            // No existing record, create one
-                            db.run(
-                                `INSERT INTO commission_cycles (client_id, cumulative_withdrawal, updated_at) VALUES (?, 0, CURRENT_TIMESTAMP)`,
-                                [clientId],
-                                (insertErr) => {
-                                    if (insertErr) {
-                                        reject(insertErr);
-                                    } else {
-                                        resolve({ client_id: clientId, cumulative_withdrawal: 0 });
-                                    }
-                                }
-                            );
-                        } else {
-                            resolve({ client_id: clientId, cumulative_withdrawal: 0 });
-                        }
-                    }
-                }
-            );
-        });
-    },
-
-    // Adjust commission cycle (for corrections)
-    adjust: (clientId, newCumulative) => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-            const cumulative = Math.max(0, parseFloat(newCumulative) || 0);
-            db.run(
-                `INSERT INTO commission_cycles (client_id, cumulative_withdrawal, updated_at)
-                 VALUES (?, ?, CURRENT_TIMESTAMP)
-                 ON CONFLICT(client_id) DO UPDATE SET
-                    cumulative_withdrawal = excluded.cumulative_withdrawal,
-                    updated_at = CURRENT_TIMESTAMP`,
-                [clientId, cumulative],
-                function(err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve({ client_id: clientId, cumulative_withdrawal: cumulative });
-                    }
-                }
-            );
-        });
-    },
-
-    // Get all clients with pending commission cycles
-    getAllPending: () => {
-        return new Promise((resolve, reject) => {
-            const db = getDatabase();
-            db.all(
-                `SELECT 
-                    cc.client_id,
-                    cc.cumulative_withdrawal,
-                    cc.updated_at,
-                    c.name as client_name,
-                    c.rate as client_rate,
-                    c.current_balance,
-                    u.name as agent_name,
-                    u.id as agent_id,
-                    (31 * c.rate - cc.cumulative_withdrawal) as remaining_to_threshold,
-                    (31 * c.rate) as commission_threshold
-                 FROM commission_cycles cc
-                 JOIN clients c ON cc.client_id = c.id
-                 JOIN users u ON c.agent_id = u.id
-                 WHERE cc.cumulative_withdrawal > 0 AND cc.cumulative_withdrawal < (31 * c.rate)
-                 ORDER BY cc.cumulative_withdrawal DESC`,
-                [],
-                (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows || []);
-                    }
                 }
             );
         });
@@ -3672,7 +3186,6 @@ module.exports = {
     Transaction,
     AgentDailyStatus,
     Message,
-    User,
-    CommissionCycle
+    User
 };
 

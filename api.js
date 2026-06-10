@@ -1,4 +1,4 @@
-const { Client, Transaction, User, AgentDailyStatus, CommissionCycle, Message } = require('./database');
+const { Client, Transaction, User, AgentDailyStatus, Message } = require('./database');
 const url = require('url');
 const zlib = require('zlib');
 const { 
@@ -62,21 +62,27 @@ function requireAuth(req, res, next) {
     });
 }
 
+async function isAdminUser(req) {
+    if (!req.user) {
+        return false;
+    }
+    const user = await User.getByEmail(req.user.email);
+    return !!(user && user.is_admin);
+}
+
 async function ensureAdmin(req, res) {
     if (!req.user) {
         res.writeHead(403);
         res.end(JSON.stringify({ success: false, error: 'Admin privileges required' }));
         return false;
     }
-    
-    // Get user from database to check is_admin flag
-    const user = await User.getByEmail(req.user.email);
-    if (!user || !user.is_admin) {
+
+    if (!(await isAdminUser(req))) {
         res.writeHead(403);
         res.end(JSON.stringify({ success: false, error: 'Admin privileges required' }));
         return false;
     }
-    
+
     return true;
 }
 
@@ -211,10 +217,7 @@ async function handleAPI(req, res) {
                (path === '/api/admin/dashboard/today-stats' && method === 'GET') ||
                (path.startsWith('/api/admin/withdrawals/daily') && method === 'GET') ||
                (path.startsWith('/api/admin/withdrawals/weekly') && method === 'GET') ||
-               (path.startsWith('/api/admin/withdrawals/monthly') && method === 'GET') ||
-               (path.startsWith('/api/admin/commission/daily') && method === 'GET') ||
-               (path.startsWith('/api/admin/commission/weekly') && method === 'GET') ||
-               (path.startsWith('/api/admin/commission/monthly') && method === 'GET')) {
+               (path.startsWith('/api/admin/withdrawals/monthly') && method === 'GET')) {
         // Allow real-time dashboard polling without rate limiting
     } else if (path.startsWith('/api/admin/deposits/daily')) {
         if (!checkRateLimit(req, res, windowMs, 1000, 'admin-daily')) {
@@ -424,6 +427,41 @@ async function handleAPI(req, res) {
             return;
         }
 
+        else if (path.includes('/box-account') && path.startsWith('/api/clients/') && method === 'GET') {
+            requireAuth(req, res, async () => {
+                try {
+                    const clientId = parseInt(path.split('/')[3]);
+                    if (isNaN(clientId)) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'Invalid client ID' }));
+                        return;
+                    }
+
+                    const ownerAgentId = await Client.getAgentId(clientId);
+                    if (!ownerAgentId) {
+                        res.writeHead(404);
+                        res.end(JSON.stringify({ success: false, error: 'Client not found' }));
+                        return;
+                    }
+
+                    const isAdmin = await isAdminUser(req);
+                    if (!isAdmin && parseInt(ownerAgentId) !== parseInt(req.user.id)) {
+                        res.writeHead(403);
+                        res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+                        return;
+                    }
+
+                    const account = await Transaction.getBoxAccountForClient(clientId, ownerAgentId);
+                    res.writeHead(200);
+                    res.end(JSON.stringify({ success: true, data: account }));
+                } catch (err) {
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ success: false, error: err.message || 'Failed to load box account' }));
+                }
+            });
+            return;
+        }
+
         else if (path.startsWith('/api/clients/') && method === 'GET') {
             requireAuth(req, res, async () => {
                 try {
@@ -503,6 +541,50 @@ async function handleAPI(req, res) {
                         return;
                     }
 
+                    if (effectiveTransactionType === 'withdrawal') {
+                        try {
+                            await Transaction.previewWithdrawal(parseInt(client_id), req.user.id, amountValue);
+                        } catch (previewErr) {
+                            res.writeHead(400);
+                            res.end(JSON.stringify({ success: false, error: previewErr.message }));
+                            return;
+                        }
+
+                        const transaction = await Transaction.createWithdrawal({
+                            client_id: parseInt(client_id),
+                            agent_id: req.user.id,
+                            withdrawal_amount: amountValue,
+                            transaction_date,
+                            notes: sanitizedNotes
+                        });
+
+                        try {
+                            const updatedClient = await Client.getById(parseInt(client_id), req.user.id);
+                            if (updatedClient && transaction.withdrawal) {
+                                await sendTransactionMessage({
+                                    clientId: parseInt(client_id),
+                                    transactionId: transaction.withdrawal.id,
+                                    transactionType: 'withdrawal',
+                                    amount: transaction.totals?.withdrawal_amount || amountValue,
+                                    clientName: updatedClient.name,
+                                    phoneNumber: updatedClient.phone,
+                                    balance: updatedClient.current_balance,
+                                    date: transaction_date
+                                });
+                            }
+                        } catch (msgError) {
+                            logger.error('Failed to send withdrawal message', {
+                                error: msgError.message,
+                                clientId: parseInt(client_id),
+                                transactionId: transaction.withdrawal?.id
+                            });
+                        }
+
+                        res.writeHead(201);
+                        res.end(JSON.stringify({ success: true, data: transaction }));
+                        return;
+                    }
+
                     await AgentDailyStatus.ensureCanRecord(req.user.id, transaction_date);
 
                     const transaction = await Transaction.create({
@@ -515,30 +597,6 @@ async function handleAPI(req, res) {
                     });
 
                     await AgentDailyStatus.upsertPending(req.user.id, transaction_date);
-
-                    // Withdrawals notify immediately; deposits notify after admin approval
-                    try {
-                        const updatedClient = await Client.getById(parseInt(client_id), req.user.id);
-                        if (updatedClient && effectiveTransactionType === 'withdrawal') {
-                            await sendTransactionMessage({
-                                clientId: parseInt(client_id),
-                                transactionId: transaction.id,
-                                transactionType: effectiveTransactionType,
-                                amount: amountValue,
-                                clientName: updatedClient.name,
-                                phoneNumber: updatedClient.phone,
-                                balance: updatedClient.current_balance,
-                                date: transaction_date
-                            });
-                        }
-                    } catch (msgError) {
-                        // Log error but don't fail the transaction
-                        logger.error('Failed to send transaction message', { 
-                            error: msgError.message, 
-                            clientId: parseInt(client_id),
-                            transactionId: transaction.id 
-                        });
-                    }
 
                     res.writeHead(201);
                     res.end(JSON.stringify({ success: true, data: transaction }));
@@ -940,23 +998,29 @@ async function handleAPI(req, res) {
                         return;
                     }
 
-                    // Check if client has sufficient balance for withdrawal
-                    // Commission will be deducted automatically when cumulative withdrawals reach threshold
-                    const currentBalance = parseFloat(client.current_balance) || 0;
-                    const clientRate = Math.max(0, parseFloat(client.rate) || 0);
-                    
-                    // Check worst-case scenario: withdrawal + potential commission
-                    // The database function will handle the actual logic based on cumulative withdrawals
-                    const maxPossibleDeduction = amountValue + clientRate;
-                    if (currentBalance < amountValue) {
-                        const errorMessage = `Insufficient balance. Withdrawal requires ₵${amountValue.toFixed(2)}, but client balance is ₵${currentBalance.toFixed(2)}.`;
+                    try {
+                        const preview = await Transaction.previewWithdrawal(
+                            parseInt(client_id),
+                            parseInt(agent_id),
+                            amountValue
+                        );
+                        const currentBalance = parseFloat(client.current_balance) || 0;
+                        if (currentBalance + 0.001 < preview.withdrawal.total_deduction) {
+                            res.writeHead(400);
+                            res.end(JSON.stringify({
+                                success: false,
+                                error: `Insufficient balance. Total deduction would be ₵${preview.withdrawal.total_deduction.toFixed(2)} ` +
+                                    `(payout ₵${preview.withdrawal.payout.toFixed(2)} + commission ₵${preview.withdrawal.commission_amount.toFixed(2)}).`
+                            }));
+                            return;
+                        }
+                    } catch (previewErr) {
                         res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: errorMessage }));
+                        res.end(JSON.stringify({ success: false, error: previewErr.message }));
                         return;
                     }
 
-                    // Note: Commission will be automatically deducted when cumulative withdrawals reach client's rate (31 boxes)
-                    const transaction = await Transaction.createWithdrawalWithCommission({
+                    const transaction = await Transaction.createWithdrawal({
                         client_id: parseInt(client_id),
                         agent_id: parseInt(agent_id),
                         withdrawal_amount: amountValue,
@@ -973,7 +1037,7 @@ async function handleAPI(req, res) {
                                 clientId: parseInt(client_id),
                                 transactionId: transaction.withdrawal.id,
                                 transactionType: 'withdrawal',
-                                amount: transaction.withdrawal_amount || amountValue,
+                                amount: transaction.totals?.withdrawal_amount || amountValue,
                                 clientName: updatedClient.name,
                                 phoneNumber: updatedClient.phone,
                                 balance: updatedClient.current_balance,
@@ -1000,138 +1064,55 @@ async function handleAPI(req, res) {
             return;
         }
 
-        // Get daily commissions for admin
-        else if (path.startsWith('/api/admin/commission/daily') && method === 'GET') {
+        // Preview withdrawal with box commission rules
+        else if (path === '/api/admin/withdrawals/preview' && method === 'POST') {
             requireAuth(req, res, async () => {
                 if (!(await ensureAdmin(req, res))) {
                     return;
                 }
                 try {
-                    const query = parsedUrl.query;
-                    const date = query.date || new Date().toISOString().split('T')[0];
-                    const result = await Transaction.getDailyCommissions(date);
+                    const body = await parseBody(req);
+                    const clientId = parseInt(body.client_id);
+                    const agentId = parseInt(body.agent_id);
+                    const amountValue = parseFloat(body.amount);
+                    if (isNaN(clientId) || isNaN(agentId) || isNaN(amountValue) || amountValue <= 0) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'client_id, agent_id, and amount are required' }));
+                        return;
+                    }
+                    const preview = await Transaction.previewWithdrawal(clientId, agentId, amountValue);
                     res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: result }));
+                    res.end(JSON.stringify({ success: true, data: preview }));
                 } catch (err) {
-                    console.error('Error fetching daily commissions:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch daily commissions: ' + err.message }));
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ success: false, error: err.message || 'Failed to preview withdrawal' }));
                 }
             });
             return;
         }
 
-        // Get weekly commissions for admin
-        else if (path.startsWith('/api/admin/commission/weekly') && method === 'GET') {
+        // Toggle deferral request on a client account
+        else if (path.includes('/deferral') && path.startsWith('/api/admin/clients/') && method === 'PUT') {
             requireAuth(req, res, async () => {
                 if (!(await ensureAdmin(req, res))) {
                     return;
                 }
                 try {
-                    const query = parsedUrl.query;
-                    const startDate = query.start_date;
-                    const endDate = query.end_date;
-
-                    if (!startDate || !endDate) {
+                    const clientId = parseInt(path.split('/')[4]);
+                    const body = await parseBody(req);
+                    const agentId = parseInt(body.agent_id);
+                    if (isNaN(clientId) || isNaN(agentId)) {
                         res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'start_date and end_date parameters are required' }));
+                        res.end(JSON.stringify({ success: false, error: 'Valid client_id and agent_id are required' }));
                         return;
                     }
-
-                    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' }));
-                        return;
-                    }
-
-                    const result = await Transaction.getWeeklyCommissions(startDate, endDate);
+                    const deferralActive = body.deferral_active === true || body.deferral_active === 1 || body.deferral_active === 'true';
+                    const result = await Client.setDeferral(clientId, agentId, deferralActive);
                     res.writeHead(200);
                     res.end(JSON.stringify({ success: true, data: result }));
                 } catch (err) {
-                    console.error('Error fetching weekly commissions:', err);
                     res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch weekly commissions: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Get monthly commissions for admin
-        else if (path.startsWith('/api/admin/commission/monthly') && method === 'GET') {
-            requireAuth(req, res, async () => {
-                if (!(await ensureAdmin(req, res))) {
-                    return;
-                }
-                try {
-                    const query = parsedUrl.query;
-                    const startDate = query.start_date;
-                    const endDate = query.end_date;
-
-                    if (!startDate || !endDate) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'start_date and end_date parameters are required' }));
-                        return;
-                    }
-
-                    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' }));
-                        return;
-                    }
-
-                    const result = await Transaction.getMonthlyCommissions(startDate, endDate);
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: result }));
-                } catch (err) {
-                    console.error('Error fetching monthly commissions:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch monthly commissions: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Get commission cycle for a client
-        else if (path.startsWith('/api/clients/') && path.includes('/commission-cycle') && method === 'GET') {
-            requireAuth(req, res, async () => {
-                try {
-                    const pathParts = path.split('/');
-                    const clientId = parseInt(pathParts[3]);
-                    if (isNaN(clientId)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid client ID' }));
-                        return;
-                    }
-                    const cycle = await CommissionCycle.getByClientIdWithClientInfo(clientId, req.user.id);
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: cycle }));
-                } catch (err) {
-                    console.error('Error fetching commission cycle:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch commission cycle: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Get commission history for a client
-        else if (path.startsWith('/api/clients/') && path.includes('/commission-history') && method === 'GET') {
-            requireAuth(req, res, async () => {
-                try {
-                    const pathParts = path.split('/');
-                    const clientId = parseInt(pathParts[3]);
-                    if (isNaN(clientId)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid client ID' }));
-                        return;
-                    }
-                    const history = await Transaction.getCommissionHistory(clientId, req.user.id);
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: history }));
-                } catch (err) {
-                    console.error('Error fetching commission history:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch commission history: ' + err.message }));
+                    res.end(JSON.stringify({ success: false, error: err.message || 'Failed to update deferral setting' }));
                 }
             });
             return;
@@ -1193,84 +1174,6 @@ async function handleAPI(req, res) {
                     console.error('Error updating client rate:', err);
                     res.writeHead(500);
                     res.end(JSON.stringify({ success: false, error: 'Failed to update client rate: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Admin: Get all pending commission cycles
-        else if (path === '/api/admin/commission-cycles/pending' && method === 'GET') {
-            requireAuth(req, res, async () => {
-                if (!(await ensureAdmin(req, res))) {
-                    return;
-                }
-                try {
-                    const pending = await CommissionCycle.getAllPending();
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: pending }));
-                } catch (err) {
-                    console.error('Error fetching pending commission cycles:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch pending cycles: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Admin: Reset commission cycle for a client
-        else if (path.startsWith('/api/admin/commission-cycles/') && path.endsWith('/reset') && method === 'POST') {
-            requireAuth(req, res, async () => {
-                if (!(await ensureAdmin(req, res))) {
-                    return;
-                }
-                try {
-                    const pathParts = path.split('/');
-                    const clientId = parseInt(pathParts[4]);
-                    if (isNaN(clientId)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid client ID' }));
-                        return;
-                    }
-                    const result = await CommissionCycle.reset(clientId);
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: result }));
-                } catch (err) {
-                    console.error('Error resetting commission cycle:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to reset commission cycle: ' + err.message }));
-                }
-            });
-            return;
-        }
-
-        // Admin: Adjust commission cycle for a client
-        else if (path.startsWith('/api/admin/commission-cycles/') && path.endsWith('/adjust') && method === 'POST') {
-            requireAuth(req, res, async () => {
-                if (!(await ensureAdmin(req, res))) {
-                    return;
-                }
-                try {
-                    const pathParts = path.split('/');
-                    const clientId = parseInt(pathParts[4]);
-                    if (isNaN(clientId)) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'Invalid client ID' }));
-                        return;
-                    }
-                    const body = await parseBody(req);
-                    const { cumulative_withdrawal } = body;
-                    if (cumulative_withdrawal === undefined) {
-                        res.writeHead(400);
-                        res.end(JSON.stringify({ success: false, error: 'cumulative_withdrawal is required' }));
-                        return;
-                    }
-                    const result = await CommissionCycle.adjust(clientId, cumulative_withdrawal);
-                    res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: result }));
-                } catch (err) {
-                    console.error('Error adjusting commission cycle:', err);
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: 'Failed to adjust commission cycle: ' + err.message }));
                 }
             });
             return;

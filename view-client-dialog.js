@@ -106,8 +106,14 @@ class ViewClientDialog {
                         </div>
 
                         <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Rate</div>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Box Rate</div>
                             <div style="font-size: 15px; font-weight: 600; color: var(--text-primary);">${formatCurrency(client.rate)}</div>
+                        </div>
+
+                        <div id="boxAccountInfo" style="padding: 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border: 2px solid #fbbf24;">
+                            <div style="font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Box Account</div>
+                            <div id="boxAccountDetails" style="font-size: 13px; color: #78350f;">Loading box account...</div>
+                            <div id="deferralAdminControls" style="display:none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(146, 64, 14, 0.2);"></div>
                         </div>
 
                         <div style="padding: 12px; background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-radius: 8px; border: 2px solid #86efac;">
@@ -126,13 +132,6 @@ class ViewClientDialog {
                         </div>
                     </div>
 
-                    <!-- Commission Cycle Information -->
-                    <div id="commissionCycleInfo" style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border: 2px solid #fbbf24;">
-                        <div style="font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Commission Cycle Status</div>
-                        <div id="commissionCycleDetails" style="font-size: 13px; color: #78350f;">
-                            Loading commission cycle information...
-                        </div>
-                    </div>
                 </div>
                 <div class="dialog-footer">
                     <button class="dialog-btn dialog-btn-primary" id="viewClientClose">Close</button>
@@ -198,45 +197,67 @@ class ViewClientDialog {
                 }
             }, 50);
 
-            // Load commission cycle information
-            if (typeof ClientAPI !== 'undefined' && ClientAPI.getCommissionCycle) {
-                ClientAPI.getCommissionCycle(clientId)
-                    .then(response => {
-                        if (response && response.success && response.data) {
-                            const cycle = response.data;
-                            const detailsElement = document.getElementById('commissionCycleDetails');
-                            if (detailsElement) {
-                                const cumulative = parseFloat(cycle.cumulative_withdrawal || 0);
-                                const rate = parseFloat(cycle.client_rate || 0);
-                                const remaining = parseFloat(cycle.remaining_to_threshold || 0);
-                                const thresholdReached = cycle.threshold_reached || false;
-                                
-                                if (thresholdReached) {
-                                    detailsElement.innerHTML = `
-                                        <div style="color: #059669; font-weight: 600;">✓ Threshold Reached</div>
-                                        <div style="margin-top: 8px;">Commission will be deducted on next withdrawal.</div>
-                                    `;
-                                } else if (cumulative > 0) {
-                                    const percentage = ((cumulative / rate) * 100).toFixed(1);
-                                    detailsElement.innerHTML = `
-                                        <div><strong>Cumulative Withdrawals:</strong> ${formatCurrency(cumulative)}</div>
-                                        <div style="margin-top: 6px;"><strong>Threshold:</strong> ${formatCurrency(rate)}</div>
-                                        <div style="margin-top: 6px;"><strong>Remaining:</strong> ${formatCurrency(remaining)} (${percentage}% complete)</div>
-                                        <div style="margin-top: 8px; font-size: 11px; color: #92400e;">Commission will be deducted when cumulative withdrawals reach ${formatCurrency(rate)}</div>
-                                    `;
-                                } else {
-                                    detailsElement.innerHTML = `
-                                        <div>No pending commission cycle. Commission will be tracked starting from the next withdrawal.</div>
-                                    `;
-                                }
+            if (typeof ClientAPI !== 'undefined' && ClientAPI.getBoxAccount) {
+                ClientAPI.getBoxAccount(clientId)
+                    .then((boxResponse) => {
+                        const detailsElement = document.getElementById('boxAccountDetails');
+                        if (!detailsElement || !boxResponse?.success || !boxResponse.data) {
+                            return;
+                        }
+                        const account = boxResponse.data;
+                        const ledger = account.ledger || {};
+                        detailsElement.innerHTML = `
+                            <div><strong>Active boxes:</strong> ${ledger.active_boxes || 0}</div>
+                            <div style="margin-top: 6px;"><strong>Pages:</strong> ${ledger.full_pages || 0} full, ${ledger.partial_boxes || 0} partial (of 31)</div>
+                            <div style="margin-top: 6px;"><strong>Max payout:</strong> ${formatCurrency(account.max_payout || 0)}</div>
+                            <div style="margin-top: 6px;"><strong>Deferral:</strong> ${account.deferral_active ? 'Active' : 'Off'}</div>
+                        `;
+
+                        const userData = localStorage.getItem('user');
+                        let isAdmin = false;
+                        try {
+                            isAdmin = userData ? JSON.parse(userData).isAdmin === true : false;
+                        } catch (e) {
+                            isAdmin = false;
+                        }
+
+                        const deferralControls = document.getElementById('deferralAdminControls');
+                        if (deferralControls && isAdmin && typeof AdminAPI !== 'undefined' && AdminAPI.setDeferral) {
+                            deferralControls.style.display = 'block';
+                            deferralControls.innerHTML = `
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#78350f; cursor:pointer;">
+                                    <input type="checkbox" id="deferralToggle" ${account.deferral_active ? 'checked' : ''} />
+                                    Deferral request approved (skip commission on incomplete page)
+                                </label>
+                            `;
+                            const toggle = document.getElementById('deferralToggle');
+                            if (toggle) {
+                                toggle.addEventListener('change', async function() {
+                                    try {
+                                        const response = await AdminAPI.setDeferral(clientId, client.agent_id, this.checked);
+                                        if (!response?.success) {
+                                            throw new Error(response?.error || 'Failed to update deferral');
+                                        }
+                                        if (typeof Toast !== 'undefined') {
+                                            Toast.success(this.checked ? 'Deferral enabled for this client.' : 'Deferral disabled for this client.');
+                                        }
+                                    } catch (error) {
+                                        this.checked = !this.checked;
+                                        if (typeof Dialog !== 'undefined') {
+                                            Dialog.error(error.message || 'Failed to update deferral', 'Error');
+                                        } else {
+                                            alert(error.message || 'Failed to update deferral');
+                                        }
+                                    }
+                                });
                             }
                         }
                     })
-                    .catch(error => {
-                        console.error('Error loading commission cycle:', error);
-                        const detailsElement = document.getElementById('commissionCycleDetails');
+                    .catch((error) => {
+                        console.error('Error loading box account:', error);
+                        const detailsElement = document.getElementById('boxAccountDetails');
                         if (detailsElement) {
-                            detailsElement.textContent = 'Unable to load commission cycle information.';
+                            detailsElement.textContent = 'Unable to load box account information.';
                         }
                     });
             }

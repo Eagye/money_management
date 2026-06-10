@@ -123,10 +123,8 @@ const ClientAPI = {
     
     getStats: () => apiRequest('/clients/stats', { method: 'GET' }),
     
-    getCommissionCycle: (id) => apiRequest(`/clients/${id}/commission-cycle`, { method: 'GET' }),
-    
-    getCommissionHistory: (id) => apiRequest(`/clients/${id}/commission-history`, { method: 'GET' }),
-    
+    getBoxAccount: (id) => apiRequest(`/clients/${id}/box-account`, { method: 'GET' }),
+
     updateRate: (id, rate, agentId) => apiRequest(`/clients/${id}/rate`, {
         method: 'PUT',
         body: JSON.stringify({ rate, agent_id: agentId })
@@ -197,21 +195,20 @@ const AdminAPI = {
         method: 'POST',
         body: JSON.stringify(withdrawalData)
     }),
+    previewWithdrawal: (payload) => apiRequest('/admin/withdrawals/preview', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }),
+    setDeferral: (clientId, agentId, deferralActive) => apiRequest(`/admin/clients/${clientId}/deferral`, {
+        method: 'PUT',
+        body: JSON.stringify({ agent_id: agentId, deferral_active: deferralActive })
+    }),
     updateDailyStatus: (payload) => apiRequest('/admin/deposits/daily/status', {
         method: 'POST',
         body: JSON.stringify(payload)
     }),
-    getDailyCommission: (date) => apiRequest(`/admin/commission/daily?date=${date}`, { method: 'GET' }),
-    getWeeklyCommission: (startDate, endDate) => apiRequest(`/admin/commission/weekly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
-    getMonthlyCommission: (startDate, endDate) => apiRequest(`/admin/commission/monthly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
-    getPendingCommissionCycles: () => apiRequest('/admin/commission-cycles/pending', { method: 'GET' }),
     getDashboardStats: () => apiRequest('/admin/dashboard/stats', { method: 'GET' }),
     getTodayStats: (date) => apiRequest(`/admin/dashboard/today-stats${date ? `?date=${date}` : ''}`, { method: 'GET' }),
-    resetCommissionCycle: (clientId) => apiRequest(`/admin/commission-cycles/${clientId}/reset`, { method: 'POST' }),
-    adjustCommissionCycle: (clientId, cumulativeWithdrawal) => apiRequest(`/admin/commission-cycles/${clientId}/adjust`, {
-        method: 'POST',
-        body: JSON.stringify({ cumulative_withdrawal: cumulativeWithdrawal })
-    }),
     createAdmin: (adminData) => apiRequest('/admin/users', {
         method: 'POST',
         body: JSON.stringify(adminData)
