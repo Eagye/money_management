@@ -2554,6 +2554,122 @@ const Transaction = {
         });
     },
 
+    getDailyCommissions: (date) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+
+            db.all(
+                `SELECT 
+                    t.id as commission_id,
+                    ABS(t.amount) as commission_amount,
+                    t.transaction_date,
+                    t.created_at,
+                    t.notes as commission_notes,
+                    w.id as withdrawal_id,
+                    ABS(w.amount) as withdrawal_amount,
+                    w.created_at as withdrawal_created_at,
+                    c.id as client_id,
+                    c.name as client_name,
+                    c.phone as client_phone,
+                    c.rate as client_rate,
+                    u.id as agent_id,
+                    u.name as agent_name
+                 FROM transactions t
+                 JOIN clients c ON t.client_id = c.id
+                 JOIN users u ON t.agent_id = u.id
+                 LEFT JOIN transactions w ON w.id = t.related_transaction_id
+                 WHERE t.transaction_date = ? AND t.transaction_type = 'commission'
+                 ORDER BY t.created_at DESC`,
+                [date],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    const totalAmount = (rows || []).reduce((sum, row) => sum + (parseFloat(row.commission_amount) || 0), 0);
+                    resolve({
+                        commissions: rows || [],
+                        total_amount: totalAmount,
+                        date
+                    });
+                }
+            );
+        });
+    },
+
+    getWeeklyCommissions: (startDate, endDate) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+
+            db.all(
+                `SELECT 
+                    u.id as agent_id,
+                    u.name as agent_name,
+                    SUM(ABS(t.amount)) as total_commission,
+                    COUNT(DISTINCT t.client_id) as unique_clients,
+                    COUNT(t.id) as commission_count
+                 FROM transactions t
+                 JOIN users u ON t.agent_id = u.id
+                 WHERE t.transaction_date >= ? AND t.transaction_date <= ?
+                   AND t.transaction_type = 'commission'
+                 GROUP BY u.id, u.name
+                 ORDER BY total_commission DESC`,
+                [startDate, endDate],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    const overallTotal = (rows || []).reduce((sum, row) => sum + (parseFloat(row.total_commission) || 0), 0);
+                    resolve({
+                        agents: rows || [],
+                        overall_total: overallTotal,
+                        start_date: startDate,
+                        end_date: endDate
+                    });
+                }
+            );
+        });
+    },
+
+    getMonthlyCommissions: (startDate, endDate) => {
+        return new Promise((resolve, reject) => {
+            const db = getDatabase();
+
+            db.all(
+                `SELECT 
+                    u.id as agent_id,
+                    u.name as agent_name,
+                    SUM(ABS(t.amount)) as total_commission,
+                    COUNT(DISTINCT t.client_id) as unique_clients,
+                    COUNT(t.id) as commission_count
+                 FROM transactions t
+                 JOIN users u ON t.agent_id = u.id
+                 WHERE t.transaction_date >= ? AND t.transaction_date <= ?
+                   AND t.transaction_type = 'commission'
+                 GROUP BY u.id, u.name
+                 ORDER BY total_commission DESC`,
+                [startDate, endDate],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    const overallTotal = (rows || []).reduce((sum, row) => sum + (parseFloat(row.total_commission) || 0), 0);
+                    resolve({
+                        agents: rows || [],
+                        overall_total: overallTotal,
+                        start_date: startDate,
+                        end_date: endDate
+                    });
+                }
+            );
+        });
+    },
+
 };
 
 const AgentDailyStatus = {
@@ -3021,13 +3137,27 @@ const User = {
                                         reject(err3);
                                         return;
                                     }
-                                    
-                                    resolve({
-                                        new_clients_today: newClientsRow?.new_clients_today || 0,
-                                        total_deposits: depositsRow?.total_deposits || 0,
-                                        total_withdrawals: withdrawalsRow?.total_withdrawals || 0,
-                                        date: today
-                                    });
+
+                                    db.get(
+                                        `SELECT COALESCE(SUM(ABS(amount)), 0) as total_commission 
+                                         FROM transactions 
+                                         WHERE transaction_date = ? AND transaction_type = 'commission'`,
+                                        [today],
+                                        (err4, commissionRow) => {
+                                            if (err4) {
+                                                reject(err4);
+                                                return;
+                                            }
+
+                                            resolve({
+                                                new_clients_today: newClientsRow?.new_clients_today || 0,
+                                                total_deposits: depositsRow?.total_deposits || 0,
+                                                total_withdrawals: withdrawalsRow?.total_withdrawals || 0,
+                                                total_commission: commissionRow?.total_commission || 0,
+                                                date: today
+                                            });
+                                        }
+                                    );
                                 }
                             );
                         }

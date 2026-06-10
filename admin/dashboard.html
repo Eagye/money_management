@@ -115,6 +115,23 @@
                                 </li>
                             </ul>
                         </li>
+                        <li>
+                            <button class="dropdown-item dropdown-parent" id="commissionMenuItem">
+                                Commission
+                                <span class="submenu-arrow">▶</span>
+                            </button>
+                            <ul class="submenu" id="commissionSubmenu">
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="dailyCommissionMenuItem">Daily Commission</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="weeklyCommissionMenuItem">Weekly Commission</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item submenu-item" id="monthlyCommissionMenuItem">Monthly Commission</button>
+                                </li>
+                            </ul>
+                        </li>
                         <li style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;">
                             <button class="dropdown-item" id="logoutMenuItem" style="color: var(--primary-color); font-weight: 700;">
                                 Log Out
@@ -169,6 +186,11 @@
                 <div class="metric-card">
                     <div class="metric-label">Withdrawals Today</div>
                     <div class="metric-value" id="withdrawalsToday">₵0.00</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Commission Today</div>
+                    <div class="metric-value" id="commissionToday">₵0.00</div>
                 </div>
 
                 <div class="metric-card">
@@ -487,16 +509,19 @@
                         document.getElementById('newClientsToday').textContent = (todayStats.new_clients_today || 0).toString();
                         document.getElementById('depositsToday').textContent = formatCurrency(todayStats.total_deposits || 0);
                         document.getElementById('withdrawalsToday').textContent = formatCurrency(todayStats.total_withdrawals || 0);
+                        document.getElementById('commissionToday').textContent = formatCurrency(todayStats.total_commission || 0);
                     } else {
                         document.getElementById('newClientsToday').textContent = '0';
                         document.getElementById('depositsToday').textContent = '₵0.00';
                         document.getElementById('withdrawalsToday').textContent = '₵0.00';
+                        document.getElementById('commissionToday').textContent = '₵0.00';
                     }
                 } catch (err) {
                     console.error('Error loading today stats:', err);
                     document.getElementById('newClientsToday').textContent = '0';
                     document.getElementById('depositsToday').textContent = '₵0.00';
                     document.getElementById('withdrawalsToday').textContent = '₵0.00';
+                    document.getElementById('commissionToday').textContent = '₵0.00';
                 }
                 // Load active accounts for current week
                 try {
@@ -1141,6 +1166,18 @@
                 });
             }
 
+            // Commission menu item - toggle submenu
+            const commissionMenuItem = document.getElementById('commissionMenuItem');
+            const commissionSubmenu = document.getElementById('commissionSubmenu');
+            if (commissionMenuItem && commissionSubmenu) {
+                commissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    commissionSubmenu.classList.toggle('show');
+                    commissionMenuItem.classList.toggle('active');
+                });
+            }
+
             // Daily Deposits menu item
             const dailyDepositsMenuItem = document.getElementById('dailyDepositsMenuItem');
             if (dailyDepositsMenuItem) {
@@ -1252,6 +1289,36 @@
                     e.preventDefault();
                     e.stopPropagation();
                     window.location.href = '/admin/withdrawals/monthly.html';
+                });
+            }
+
+            // Daily Commission menu item
+            const dailyCommissionMenuItem = document.getElementById('dailyCommissionMenuItem');
+            if (dailyCommissionMenuItem) {
+                dailyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/daily.html';
+                });
+            }
+
+            // Weekly Commission menu item
+            const weeklyCommissionMenuItem = document.getElementById('weeklyCommissionMenuItem');
+            if (weeklyCommissionMenuItem) {
+                weeklyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/weekly.html';
+                });
+            }
+
+            // Monthly Commission menu item
+            const monthlyCommissionMenuItem = document.getElementById('monthlyCommissionMenuItem');
+            if (monthlyCommissionMenuItem) {
+                monthlyCommissionMenuItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = '/admin/commission/monthly.html';
                 });
             }
 

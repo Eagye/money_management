@@ -217,7 +217,10 @@ async function handleAPI(req, res) {
                (path === '/api/admin/dashboard/today-stats' && method === 'GET') ||
                (path.startsWith('/api/admin/withdrawals/daily') && method === 'GET') ||
                (path.startsWith('/api/admin/withdrawals/weekly') && method === 'GET') ||
-               (path.startsWith('/api/admin/withdrawals/monthly') && method === 'GET')) {
+               (path.startsWith('/api/admin/withdrawals/monthly') && method === 'GET') ||
+               (path.startsWith('/api/admin/commission/daily') && method === 'GET') ||
+               (path.startsWith('/api/admin/commission/weekly') && method === 'GET') ||
+               (path.startsWith('/api/admin/commission/monthly') && method === 'GET')) {
         // Allow real-time dashboard polling without rate limiting
     } else if (path.startsWith('/api/admin/deposits/daily')) {
         if (!checkRateLimit(req, res, windowMs, 1000, 'admin-daily')) {
@@ -1554,6 +1557,97 @@ async function handleAPI(req, res) {
                     console.error('Error fetching monthly withdrawals:', err);
                     res.writeHead(500);
                     res.end(JSON.stringify({ success: false, error: 'Failed to fetch monthly withdrawals: ' + err.message }));
+                }
+            });
+            return;
+        }
+
+        // Get daily commissions for admin
+        else if (path.startsWith('/api/admin/commission/daily') && method === 'GET') {
+            requireAuth(req, res, async () => {
+                if (!(await ensureAdmin(req, res))) {
+                    return;
+                }
+                try {
+                    const query = parsedUrl.query;
+                    const date = query.date || new Date().toISOString().split('T')[0];
+                    const result = await Transaction.getDailyCommissions(date);
+                    res.writeHead(200);
+                    res.end(JSON.stringify({ success: true, data: result }));
+                } catch (err) {
+                    console.error('Error fetching daily commissions:', err);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch daily commissions: ' + err.message }));
+                }
+            });
+            return;
+        }
+
+        // Get weekly commissions for admin
+        else if (path.startsWith('/api/admin/commission/weekly') && method === 'GET') {
+            requireAuth(req, res, async () => {
+                if (!(await ensureAdmin(req, res))) {
+                    return;
+                }
+                try {
+                    const query = parsedUrl.query;
+                    const startDate = query.start_date;
+                    const endDate = query.end_date;
+
+                    if (!startDate || !endDate) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'start_date and end_date parameters are required' }));
+                        return;
+                    }
+
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' }));
+                        return;
+                    }
+
+                    const result = await Transaction.getWeeklyCommissions(startDate, endDate);
+                    res.writeHead(200);
+                    res.end(JSON.stringify({ success: true, data: result }));
+                } catch (err) {
+                    console.error('Error fetching weekly commissions:', err);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch weekly commissions: ' + err.message }));
+                }
+            });
+            return;
+        }
+
+        // Get monthly commissions for admin
+        else if (path.startsWith('/api/admin/commission/monthly') && method === 'GET') {
+            requireAuth(req, res, async () => {
+                if (!(await ensureAdmin(req, res))) {
+                    return;
+                }
+                try {
+                    const query = parsedUrl.query;
+                    const startDate = query.start_date;
+                    const endDate = query.end_date;
+
+                    if (!startDate || !endDate) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'start_date and end_date parameters are required' }));
+                        return;
+                    }
+
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' }));
+                        return;
+                    }
+
+                    const result = await Transaction.getMonthlyCommissions(startDate, endDate);
+                    res.writeHead(200);
+                    res.end(JSON.stringify({ success: true, data: result }));
+                } catch (err) {
+                    console.error('Error fetching monthly commissions:', err);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ success: false, error: 'Failed to fetch monthly commissions: ' + err.message }));
                 }
             });
             return;

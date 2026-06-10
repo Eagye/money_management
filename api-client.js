@@ -189,6 +189,9 @@ const AdminAPI = {
     getDailyWithdrawals: (date) => apiRequest(`/admin/withdrawals/daily?date=${date}`, { method: 'GET' }),
     getWeeklyWithdrawals: (startDate, endDate) => apiRequest(`/admin/withdrawals/weekly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
     getMonthlyWithdrawals: (startDate, endDate) => apiRequest(`/admin/withdrawals/monthly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
+    getDailyCommission: (date) => apiRequest(`/admin/commission/daily?date=${date}`, { method: 'GET' }),
+    getWeeklyCommission: (startDate, endDate) => apiRequest(`/admin/commission/weekly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
+    getMonthlyCommission: (startDate, endDate) => apiRequest(`/admin/commission/monthly?start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
     getAgentClientWithdrawals: (agentId, startDate, endDate) => apiRequest(`/admin/withdrawals/weekly?agent_id=${agentId}&start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
     getAgentClientWithdrawalsMonthly: (agentId, startDate, endDate) => apiRequest(`/admin/withdrawals/monthly?agent_id=${agentId}&start_date=${startDate}&end_date=${endDate}`, { method: 'GET' }),
     createWithdrawal: (withdrawalData) => apiRequest('/admin/withdrawals', {
